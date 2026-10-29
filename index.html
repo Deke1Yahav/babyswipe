@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="he">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>בייביסוויפ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&family=Secular+One&display=swap">
+<style>
+/* Layout: one-screen phone app — header with location + filters, a swipe deck or a map in the middle, tab bar at the bottom. */
+:root {
+  --bg: #EEF3F1; --surface: #FFFFFF; --ink: #16303A; --muted: #5B6F76; --line: #D3DFDA;
+  --sun: #F2B43A; --sun-ink: #3A2A05; --yes: #1D9963; --no: #D44E44;
+  --map-land: #E3EBE6; --map-road: #FFFFFF; --map-main: #F4DC9E; --map-park: #C6E1CC; --map-water: #BFDCEA;
+  --shadow: 0 10px 30px rgba(22,48,58,.14);
+  --f-display: "Secular One", "Assistant", "Arial Hebrew", sans-serif;
+  --f-body: "Assistant", "Arial Hebrew", "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0E1B20; --surface: #16282F; --ink: #E4EEEB; --muted: #93A7AD; --line: #28404A;
+  --sun: #F5C24F; --sun-ink: #2A1F04; --yes: #39C285; --no: #EF6A5E;
+  --map-land: #12232A; --map-road: #22383F; --map-main: #4B4024; --map-park: #17392A; --map-water: #173545;
+  --shadow: 0 10px 30px rgba(0,0,0,.45); color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0E1B20; --surface: #16282F; --ink: #E4EEEB; --muted: #93A7AD; --line: #28404A;
+  --sun: #F5C24F; --sun-ink: #2A1F04; --yes: #39C285; --no: #EF6A5E;
+  --map-land: #12232A; --map-road: #22383F; --map-main: #4B4024; --map-park: #17392A; --map-water: #173545;
+  --shadow: 0 10px 30px rgba(0,0,0,.45); color-scheme: dark }
+
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; overflow: hidden; }
+* { box-sizing: border-box; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--sun); outline-offset: 2px; }
+svg { flex: none; }
+
+.app { height: 100%; max-width: 480px; margin: 0 auto; display: flex; flex-direction: column;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+header { padding-block: 12px 8px; display: flex; flex-direction: column; gap: 10px; }
+.brand { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.brand h1 { font-family: var(--f-display); font-weight: 400; font-size: 24px; margin: 0; letter-spacing: .2px; }
+.brand h1 span { color: var(--sun); }
+.sample { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+
+.loc { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.loc-label { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 14px; }
+.loc-label b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip-btn { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+
+.filters { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+.filters-sum { width: 100%; display: flex; align-items: center; gap: 8px; padding: 9px 12px; border: 0; background: none; text-align: start; font-size: 14px; }
+.filters-sum .sum { flex: 1; min-width: 0; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.filters-sum .sum b { color: var(--ink); }
+.filters-sum .chev { transition: transform .2s; }
+.filters.open .chev { transform: rotate(180deg); }
+.filters-body { display: none; padding: 0 12px 12px; gap: 12px; flex-direction: column; }
+.filters.open .filters-body { display: flex; }
+.f-row { display: flex; flex-direction: column; gap: 4px; }
+.f-row label { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
+.f-row label output { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; }
+input[type=range] { width: 100%; accent-color: var(--yes); }
+.f-inline { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+.toggle input { width: 18px; height: 18px; accent-color: var(--yes); }
+select { font: inherit; font-size: 14px; border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; background: var(--surface); color: var(--ink); }
+
+main { flex: 1; min-height: 0; position: relative; }
+.view { position: absolute; inset: 0; display: flex; flex-direction: column; }
+.view[hidden] { display: none !important; }
+
+/* Swipe deck */
+.deck { flex: 1; position: relative; min-height: 0; margin-top: 4px; }
+.card { position: absolute; inset: 0; background: var(--surface); border-radius: 22px; box-shadow: var(--shadow); overflow: hidden;
+  display: flex; flex-direction: column; touch-action: none; user-select: none; -webkit-user-select: none; will-change: transform; }
+.card.behind { transform: scale(.95) translateY(14px); }
+.card.behind2 { transform: scale(.9) translateY(28px); }
+.card.top { cursor: grab; }
+.card.top:active { cursor: grabbing; }
+.art { flex: 1; min-height: 120px; position: relative; display: grid; place-items: center; overflow: hidden; }
+.art .ini { font-family: var(--f-display); font-size: clamp(64px, 18vw, 110px); line-height: 1; opacity: .92; }
+.art .blob { position: absolute; border-radius: 50%; opacity: .35; }
+.badge { position: absolute; top: 14px; inset-inline-start: 14px; background: rgba(255,255,255,.92); color: #16303A; border-radius: 999px; padding: 4px 10px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.badge i { width: 8px; height: 8px; border-radius: 50%; background: #1D9963; display: block; }
+.badge.later i { background: #C98A12; }
+.stamp { position: absolute; top: 26px; font-family: var(--f-display); font-size: 30px; padding: 2px 14px; border: 4px solid; border-radius: 10px; opacity: 0; pointer-events: none; background: rgba(255,255,255,.85); }
+.stamp.like { left: 18px; color: #1D9963; transform: rotate(-14deg); }
+.stamp.nope { right: 18px; color: #D44E44; transform: rotate(14deg); }
+.info { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 8px; }
+.name-row { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.name-row h2 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 26px; line-height: 1.1; }
+.name-row .age { font-size: 20px; color: var(--muted); }
+.name-row .rate { margin-inline-start: auto; font-weight: 700; display: inline-flex; gap: 4px; align-items: center; font-variant-numeric: tabular-nums; }
+.name-row .rate small { color: var(--muted); font-weight: 400; }
+.facts { display: flex; gap: 6px; flex-wrap: wrap; }
+.fact { display: inline-flex; align-items: center; gap: 5px; background: var(--bg); border-radius: 8px; padding: 4px 9px; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.fact.price { background: var(--sun); color: var(--sun-ink); }
+.tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.tag { font-size: 12px; border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; color: var(--muted); }
+.bio { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+.actions { display: flex; justify-content: center; align-items: center; gap: 22px; padding-block: 14px 10px; }
+.act { border-radius: 50%; border: 0; background: var(--surface); box-shadow: var(--shadow); display: grid; place-items: center; transition: transform .12s; }
+.act:active { transform: scale(.92); }
+.act.big { width: 64px; height: 64px; }
+.act.small { width: 46px; height: 46px; color: var(--muted); }
+.act.no { color: var(--no); }
+.act.yes { color: var(--yes); }
+.act:disabled { opacity: .4; cursor: default; }
+.hint { text-align: center; font-size: 12px; color: var(--muted); }
+
+.empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; padding: 20px; border: 2px dashed var(--line); border-radius: 22px; }
+.empty h3 { font-family: var(--f-display); font-weight: 400; font-size: 22px; margin: 0; text-wrap: balance; }
+.empty p { margin: 0; color: var(--muted); max-width: 30ch; }
+.primary { background: var(--ink); color: var(--bg); border: 0; border-radius: 999px; padding: 10px 18px; font-weight: 700; }
+
+/* Map */
+.map-wrap { flex: 1; position: relative; border-radius: 18px; overflow: hidden; margin-top: 4px; margin-bottom: 8px; border: 1px solid var(--line); touch-action: none; background: var(--map-land); }
+.map-wrap.setting { cursor: crosshair; }
+canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.pins { position: absolute; inset: 0; pointer-events: none; }
+.pin { position: absolute; transform: translate(-50%, -100%); pointer-events: auto; border: 0; background: var(--surface); color: var(--ink); border-radius: 10px; padding: 3px 8px; font-size: 13px; font-weight: 700; box-shadow: 0 3px 10px rgba(0,0,0,.2); white-space: nowrap; font-variant-numeric: tabular-nums; display: flex; gap: 4px; align-items: center; }
+.pin::after { content: ""; position: absolute; left: 50%; bottom: -6px; transform: translateX(-50%); border: 6px solid transparent; border-bottom: 0; border-top-color: var(--surface); }
+.pin.now { background: var(--yes); color: #fff; }
+.pin.now::after { border-top-color: var(--yes); }
+.pin.liked { outline: 2px solid var(--sun); }
+.pin.dim { opacity: .38; }
+.pin.sel { transform: translate(-50%, -100%) scale(1.15); z-index: 2; }
+.me { position: absolute; width: 18px; height: 18px; transform: translate(-50%, -50%); border-radius: 50%; background: #2D7FF9; border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(45,127,249,.25); pointer-events: none; }
+.map-tools { position: absolute; top: max(10px, env(safe-area-inset-top, 0px)); inset-inline-end: 10px; display: flex; flex-direction: column; gap: 8px; }
+.tool { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; font-size: 20px; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+.tool.on { background: var(--sun); color: var(--sun-ink); border-color: var(--sun); }
+.map-note { position: absolute; top: 10px; inset-inline-start: 10px; inset-inline-end: 60px; background: var(--surface); border-radius: 10px; padding: 6px 10px; font-size: 13px; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+.legend { position: absolute; bottom: 10px; inset-inline-start: 10px; background: var(--surface); border-radius: 10px; padding: 5px 10px; font-size: 12px; color: var(--muted); display: flex; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+.legend span { display: inline-flex; align-items: center; gap: 4px; }
+.legend i { width: 10px; height: 10px; border-radius: 3px; display: block; }
+.sheet { position: absolute; left: 10px; right: 10px; bottom: 10px; background: var(--surface); border-radius: 16px; box-shadow: var(--shadow); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.sheet .top-row { display: flex; align-items: center; gap: 10px; }
+.mini-av { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; font-family: var(--f-display); font-size: 22px; flex: none; }
+.sheet h3 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 20px; }
+.sheet .sub { color: var(--muted); font-size: 13px; }
+.sheet .x { margin-inline-start: auto; border: 0; background: none; color: var(--muted); padding: 4px; }
+.row-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { flex: 1; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); padding: 9px 10px; font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; color: var(--ink); white-space: nowrap; }
+.btn.yes { background: var(--yes); border-color: var(--yes); color: #fff; }
+
+/* Saved list */
+.list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-block: 4px 12px; }
+.item { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.item .top-row { display: flex; gap: 10px; align-items: center; min-width: 0; }
+.item .meta { flex: 1; min-width: 0; }
+.item h3 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 19px; }
+.item .sub { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.phone { display: flex; align-items: center; gap: 8px; background: var(--bg); border-radius: 10px; padding: 6px 10px; }
+.phone code { flex: 1; font-family: var(--f-body); font-size: 15px; font-weight: 700; user-select: all; direction: ltr; text-align: right; font-variant-numeric: tabular-nums; }
+.phone button { border: 0; background: none; color: var(--yes); font-weight: 700; font-size: 13px; }
+.list-empty { margin: auto; text-align: center; color: var(--muted); max-width: 30ch; display: flex; flex-direction: column; gap: 6px; }
+.list-empty h3 { font-family: var(--f-display); font-weight: 400; color: var(--ink); font-size: 21px; margin: 0; }
+
+nav.tabs { display: flex; gap: 6px; padding-block: 6px 10px; border-top: 1px solid var(--line); }
+nav.tabs button { flex: 1; border: 0; background: none; border-radius: 12px; padding: 7px 4px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 12px; font-weight: 700; color: var(--muted); }
+nav.tabs button[aria-selected="true"] { color: var(--ink); background: var(--surface); }
+nav.tabs .count { background: var(--sun); color: var(--sun-ink); border-radius: 999px; padding: 0 6px; font-size: 11px; margin-inline-start: 4px; }
+
+.toast { position: fixed; left: 50%; bottom: calc(90px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); background: var(--ink); color: var(--bg); padding: 9px 16px; border-radius: 999px; font-weight: 600; font-size: 14px; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; z-index: 20; max-width: calc(100% - 32px); text-align: center; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="app" dir="rtl">
+  <header>
+    <div class="brand">
+      <h1>בייבי<span>סוויפ</span></h1>
+      <span class="sample">נתוני דוגמה</span>
+    </div>
+    <div class="loc">
+      <div class="loc-label">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+        <b id="locText">תל אביב · מרכז</b>
+      </div>
+      <button class="chip-btn" id="gpsBtn" type="button">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+        מצא אותי
+      </button>
+    </div>
+    <div class="filters" id="filters">
+      <button class="filters-sum" id="filtersToggle" type="button" aria-expanded="false">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+        <span class="sum" id="filterSum"></span>
+        <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="filters-body">
+        <div class="f-row">
+          <label for="fDist">מרחק מקסימלי <output id="oDist"></output></label>
+          <input type="range" id="fDist" min="0.5" max="15" step="0.5">
+        </div>
+        <div class="f-row">
+          <label for="fPrice">מחיר מקסימלי לשעה <output id="oPrice"></output></label>
+          <input type="range" id="fPrice" min="35" max="100" step="5">
+        </div>
+        <div class="f-inline">
+          <label class="toggle"><input type="checkbox" id="fNow"> פנויים עכשיו בלבד</label>
+          <select id="fSort" aria-label="מיון">
+            <option value="dist">הקרובים קודם</option>
+            <option value="price">הזולים קודם</option>
+            <option value="rating">הדירוג הגבוה קודם</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="view" id="vSwipe">
+      <div class="deck" id="deck"></div>
+      <div class="actions">
+        <button class="act small" id="undoBtn" type="button" aria-label="ביטול הפעולה האחרונה">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M9 14l-5-5 5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
+        </button>
+        <button class="act big no" id="noBtn" type="button" aria-label="דילוג">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+        <button class="act big yes" id="yesBtn" type="button" aria-label="שמירה">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-8-5.1-8-11a4.6 4.6 0 0 1 8-3.1A4.6 4.6 0 0 1 20 10c0 5.9-8 11-8 11z"/></svg>
+        </button>
+        <button class="act small" id="toMapBtn" type="button" aria-label="הצגה על המפה">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg>
+        </button>
+      </div>
+      <div class="hint">גררו ימינה לשמירה, שמאלה לדילוג · אפשר גם עם החצים במקלדת</div>
+    </section>
+
+    <section class="view" id="vMap" hidden>
+      <div class="map-wrap" id="mapWrap">
+        <canvas id="mapCanvas"></canvas>
+        <div class="pins" id="pins"></div>
+        <div class="map-note" id="mapNote" hidden>הקישו על המפה כדי לקבוע את המיקום שלכם</div>
+        <div class="map-tools">
+          <button class="tool" id="zoomIn" type="button" aria-label="התקרבות">+</button>
+          <button class="tool" id="zoomOut" type="button" aria-label="התרחקות">−</button>
+          <button class="tool" id="recenter" type="button" aria-label="מרכוז על המיקום שלי">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+          </button>
+          <button class="tool" id="setLoc" type="button" aria-label="קביעת מיקום על המפה" aria-pressed="false">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+          </button>
+        </div>
+        <div class="legend" id="legend">
+          <span><i style="background:var(--yes)"></i>פנויים עכשיו</span>
+          <span><i style="background:var(--surface);border:1px solid var(--line)"></i>מאוחר יותר</span>
+        </div>
+        <div class="sheet" id="sheet" hidden></div>
+      </div>
+    </section>
+
+    <section class="view" id="vSaved" hidden>
+      <div class="list" id="savedList"></div>
+    </section>
+  </main>
+
+  <nav class="tabs" role="tablist">
+    <button type="button" role="tab" data-tab="swipe" aria-selected="true">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M9 3.5L5.5 5"/></svg>
+      החלקה
+    </button>
+    <button type="button" role="tab" data-tab="map" aria-selected="false">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg>
+      מפה
+    </button>
+    <button type="button" role="tab" data-tab="saved" aria-selected="false">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s-8-5.1-8-11a4.6 4.6 0 0 1 8-3.1A4.6 4.6 0 0 1 20 10c0 5.9-8 11-8 11z"/></svg>
+      <span>שמורים<span class="count" id="savedCount" hidden></span></span>
+    </button>
+  </nav>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  // Positions are km offsets from the area origin (x = east, y = north). Sample data only.
+  const SITTERS = [
+    { id: "s1", name: "נועה", age: 22, x: -0.5, y: 0.4, price: 55, rating: 4.9, reviews: 38, years: 4, now: true, when: "עכשיו עד 23:30", tags: ["עזרה ראשונה", "תינוקות"], bio: "סטודנטית לחינוך מיוחד. אוהבת יצירה, סיפורים לפני השינה ומשחקי קופסה.", c: ["#FFD27A", "#F08A5D"] },
+    { id: "s2", name: "מאיה", age: 19, x: 1.2, y: -0.3, price: 45, rating: 4.7, reviews: 12, years: 2, now: true, when: "עכשיו עד 22:00", tags: ["אנגלית", "שיעורי בית"], bio: "מדריכה בתנועת נוער. יודעת להוציא אנרגיה בפארק ולהרדים אחרי זה.", c: ["#9FD8CB", "#3C8D93"] },
+    { id: "s3", name: "יעל", age: 27, x: -1.8, y: -1.1, price: 70, rating: 5.0, reviews: 64, years: 8, now: false, when: "היום מ-19:00", tags: ["גננת מוסמכת", "עזרה ראשונה", "תאומים"], bio: "גננת בבוקר, בייביסיטר בערב. ניסיון רב עם פעוטות ותאומים.", c: ["#C7B8F5", "#6C5BB8"] },
+    { id: "s4", name: "תמר", age: 24, x: 0.3, y: 2.1, price: 60, rating: 4.8, reviews: 29, years: 5, now: true, when: "עכשיו עד חצות", tags: ["צמחונית", "בעלי חיים"], bio: "סטודנטית לפסיכולוגיה. מסתדרת מצוין גם עם כלבים וחתולים בבית.", c: ["#FFB5A7", "#D65A5A"] },
+    { id: "s5", name: "איתי", age: 21, x: 2.6, y: 1.4, price: 50, rating: 4.6, reviews: 17, years: 3, now: false, when: "מחר מ-16:00", tags: ["ספורט", "גילאי 6–12"], bio: "שחקן כדורסל ומאמן ילדים. מתאים במיוחד לילדים בגיל בית ספר.", c: ["#A8D5FF", "#2F6DB5"] },
+    { id: "s6", name: "שירה", age: 18, x: -0.9, y: -2.4, price: 40, rating: 4.5, reviews: 8, years: 1, now: true, when: "עכשיו עד 21:30", tags: ["יצירה", "שירה"], bio: "בוגרת קורס בייביסיטר של מד״א. אוהבת לשיר ולצייר עם ילדים.", c: ["#FFE29A", "#D99A1E"] },
+    { id: "s7", name: "רוני", age: 30, x: 3.4, y: -1.9, price: 85, rating: 4.9, reviews: 91, years: 11, now: false, when: "היום מ-20:00", tags: ["אחות מוסמכת", "תינוקות", "לילות"], bio: "אחות בפגייה. מתאימה לתינוקות צעירים ולמשמרות לילה.", c: ["#B9E3B0", "#4E9A47"] },
+    { id: "s8", name: "ליאור", age: 23, x: -3.1, y: 0.8, price: 55, rating: 4.7, reviews: 22, years: 4, now: true, when: "עכשיו עד 23:00", tags: ["רוסית", "שיעורי בית"], bio: "סטודנט להנדסה. עוזר בשיעורי בית ומשחק שחמט עם הגדולים.", c: ["#F7C6E0", "#B4457F"] },
+    { id: "s9", name: "הילה", age: 26, x: 0.9, y: -3.6, price: 65, rating: 4.8, reviews: 40, years: 6, now: false, when: "סוף שבוע", tags: ["עזרה ראשונה", "בישול"], bio: "שפית במקצועה. מכינה ארוחת ערב בריאה ומשכיבה לישון בזמן.", c: ["#FFCF99", "#C46A1C"] },
+    { id: "s10", name: "דנה", age: 20, x: -2.2, y: 2.9, price: 48, rating: 4.4, reviews: 6, years: 2, now: true, when: "עכשיו עד 22:30", tags: ["אנגלית", "גילאי 3–6"], bio: "דוברת אנגלית מהבית. משחקים, ספרים וקצת אנגלית בכיף.", c: ["#B5EAD7", "#2E8B6A"] },
+    { id: "s11", name: "מיכל", age: 34, x: 4.8, y: 2.6, price: 90, rating: 5.0, reviews: 120, years: 14, now: false, when: "בתיאום מראש", tags: ["צרכים מיוחדים", "עזרה ראשונה"], bio: "מטפלת ותיקה עם ניסיון בילדים עם צרכים מיוחדים. ממליצים רבים.", c: ["#D6C9FF", "#5546A6"] },
+    { id: "s12", name: "אור", age: 22, x: 1.7, y: 3.8, price: 52, rating: 4.6, reviews: 15, years: 3, now: true, when: "עכשיו עד 23:00", tags: ["ערבית", "מוזיקה"], bio: "מנגן בגיטרה ומלמד שירים. סבלני ורגוע גם בשעת השינה.", c: ["#FFE0B5", "#B87B28"] },
+    { id: "s13", name: "ענבל", age: 25, x: -4.6, y: -2.2, price: 58, rating: 4.7, reviews: 33, years: 5, now: false, when: "היום מ-18:30", tags: ["תינוקות", "שינה"], bio: "יועצת שינה בהכשרה. יודעת לבנות שגרת ערב רגועה.", c: ["#C2E5F5", "#2C7BA0"] },
+    { id: "s14", name: "יונתן", age: 28, x: 6.2, y: -0.6, price: 75, rating: 4.8, reviews: 47, years: 7, now: true, when: "עכשיו עד 01:00", tags: ["לילות", "ספורט"], bio: "מורה לחינוך גופני. זמין לערבים מאוחרים ולאירועים.", c: ["#FFC2B4", "#BF4B32"] },
+    { id: "s15", name: "גלי", age: 17, x: -0.2, y: -1.3, price: 38, rating: 4.3, reviews: 4, years: 1, now: true, when: "עכשיו עד 21:00", tags: ["שכנה", "יצירה"], bio: "תלמידת תיכון מהשכונה. מתאימה לערבים קצרים ולילדים גדולים.", c: ["#E3F2A6", "#7C9A1E"] },
+    { id: "s16", name: "עדי", age: 29, x: -6.5, y: 4.1, price: 68, rating: 4.9, reviews: 58, years: 9, now: false, when: "מחר מ-08:00", tags: ["גננת מוסמכת", "גילאי 0–3"], bio: "גננת לשעבר. זמינה גם בשעות היום ובחופשות.", c: ["#F5D0FF", "#9A3FB5"] },
+  ].map((s, i) => ({ ...s, phone: "050-555-01" + String(10 + i) }));
+
+  const DEFAULT_ORIGIN = { lat: 32.0853, lng: 34.7818, label: "תל אביב · מרכז" };
+  const STORE = "babyswipe:v1";
+  const $ = (id) => document.getElementById(id);
+
+  const state = {
+    origin: { ...DEFAULT_ORIGIN }, me: { x: 0, y: 0 }, maxKm: 5, maxPrice: 80, nowOnly: false, sort: "dist",
+    decisions: {}, history: [], tab: "swipe", selected: null,
+  };
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE) || "{}");
+    for (const k of ["maxKm", "maxPrice", "nowOnly", "sort", "decisions"]) if (saved[k] !== undefined) state[k] = saved[k];
+  } catch (e) {}
+  function persist() {
+    try { localStorage.setItem(STORE, JSON.stringify({ maxKm: state.maxKm, maxPrice: state.maxPrice, nowOnly: state.nowOnly, sort: state.sort, decisions: state.decisions })); } catch (e) {}
+  }
+
+  const dist = (s) => Math.hypot(s.x - state.me.x, s.y - state.me.y);
+  const fmtKm = (d) => d < 1 ? Math.round(d * 1000 / 50) * 50 + " מ׳" : d.toFixed(1) + " ק״מ";
+  const passes = (s) => dist(s) <= state.maxKm && s.price <= state.maxPrice && (!state.nowOnly || s.now);
+  const byId = (id) => SITTERS.find((s) => s.id === id);
+  function sorter(a, b) {
+    if (state.sort === "price") return a.price - b.price || dist(a) - dist(b);
+    if (state.sort === "rating") return b.rating - a.rating || dist(a) - dist(b);
+    return dist(a) - dist(b);
+  }
+  const deck = () => SITTERS.filter((s) => !state.decisions[s.id] && passes(s)).sort(sorter);
+  function latLng(s) {
+    const lat = state.origin.lat + s.y / 110.574;
+    const lng = state.origin.lng + s.x / (111.32 * Math.cos(state.origin.lat * Math.PI / 180));
+    return lat.toFixed(5) + "," + lng.toFixed(5);
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    const t = $("toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
+  }
+
+  // ---------- Filters ----------
+  const fDist = $("fDist"), fPrice = $("fPrice"), fNow = $("fNow"), fSort = $("fSort");
+  fDist.value = state.maxKm; fPrice.value = state.maxPrice; fNow.checked = state.nowOnly; fSort.value = state.sort;
+  function syncFilters() {
+    $("oDist").textContent = "עד " + state.maxKm + " ק״מ";
+    $("oPrice").textContent = "עד ₪" + state.maxPrice;
+    const n = SITTERS.filter(passes).length;
+    $("filterSum").innerHTML = `<b>${n}</b> בטווח · עד ${state.maxKm} ק״מ · עד ₪${state.maxPrice}${state.nowOnly ? " · פנויים עכשיו" : ""}`;
+  }
+  fDist.addEventListener("input", () => { state.maxKm = +fDist.value; persist(); renderAll(); });
+  fPrice.addEventListener("input", () => { state.maxPrice = +fPrice.value; persist(); renderAll(); });
+  fNow.addEventListener("change", () => { state.nowOnly = fNow.checked; persist(); renderAll(); });
+  fSort.addEventListener("change", () => { state.sort = fSort.value; persist(); renderAll(); });
+  $("filtersToggle").addEventListener("click", () => {
+    const el = $("filters"); el.classList.toggle("open");
+    $("filtersToggle").setAttribute("aria-expanded", el.classList.contains("open"));
+    if (state.tab === "map") requestAnimationFrame(resizeMap);
+  });
+
+  // ---------- Swipe deck ----------
+  const deckEl = $("deck");
+  let busy = false;
+  function cardHTML(s) {
+    const [a, b] = s.c;
+    return `
+      <div class="art" style="background:linear-gradient(150deg, ${a}, ${b}); color:#fff">
+        <div class="blob" style="width:60%;aspect-ratio:1;background:${a};top:-18%;left:-12%"></div>
+        <div class="blob" style="width:45%;aspect-ratio:1;background:#fff;bottom:-20%;right:-8%;opacity:.18"></div>
+        <div class="ini" aria-hidden="true">${s.name[0]}</div>
+        <div class="badge ${s.now ? "" : "later"}"><i></i>${s.when}</div>
+        <div class="stamp like">שמירה</div>
+        <div class="stamp nope">דילוג</div>
+      </div>
+      <div class="info">
+        <div class="name-row">
+          <h2>${s.name}</h2><span class="age">${s.age}</span>
+          <span class="rate"><svg width="15" height="15" viewBox="0 0 24 24" fill="var(--sun)" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6L2.5 9.3l6.6-.8z"/></svg>${s.rating.toFixed(1)} <small>(${s.reviews})</small></span>
+        </div>
+        <div class="facts">
+          <span class="fact price">₪${s.price} לשעה</span>
+          <span class="fact">${fmtKm(dist(s))} ממך</span>
+          <span class="fact">${s.years} שנות ניסיון</span>
+        </div>
+        <div class="tags">${s.tags.map((t) => `<span class="tag">${t}</span>`).join("")}</div>
+        <p class="bio">${s.bio}</p>
+      </div>`;
+  }
+  function renderDeck() {
+    const list = deck();
+    deckEl.innerHTML = "";
+    if (!list.length) {
+      const anyPassed = SITTERS.some((s) => state.decisions[s.id] === "pass" && passes(s));
+      deckEl.innerHTML = `<div class="empty">
+        <h3>אין עוד בייביסיטרים בטווח</h3>
+        <p>נסו להרחיב את המרחק או את המחיר בסינון, או לחפש על המפה.</p>
+        ${anyPassed ? `<button class="primary" id="resetPass" type="button">להציג שוב את מי שדילגתם</button>` : ""}
+      </div>`;
+      const r = $("resetPass");
+      if (r) r.addEventListener("click", () => {
+        for (const id of Object.keys(state.decisions)) if (state.decisions[id] === "pass") delete state.decisions[id];
+        state.history = state.history.filter((id) => state.decisions[id]); persist(); renderAll();
+      });
+    }
+    const show = list.slice(0, 3);
+    show.slice().reverse().forEach((s) => {
+      const idx = show.indexOf(s);
+      const el = document.createElement("article");
+      el.className = "card" + (idx === 0 ? " top" : idx === 1 ? " behind" : " behind2");
+      el.dataset.id = s.id;
+      el.setAttribute("aria-label", `${s.name}, ${s.age}, ₪${s.price} לשעה, ${fmtKm(dist(s))} ממך`);
+      el.innerHTML = cardHTML(s);
+      deckEl.appendChild(el);
+      if (idx === 0) attachDrag(el);
+    });
+    $("noBtn").disabled = $("yesBtn").disabled = !list.length;
+    $("undoBtn").disabled = !state.history.length;
+  }
+  function attachDrag(card) {
+    let sx = 0, sy = 0, dx = 0, dy = 0, dragging = false;
+    const like = card.querySelector(".stamp.like"), nope = card.querySelector(".stamp.nope");
+    card.addEventListener("pointerdown", (e) => {
+      if (busy) return;
+      dragging = true; sx = e.clientX; sy = e.clientY; dx = dy = 0;
+      card.setPointerCapture(e.pointerId); card.style.transition = "none";
+    });
+    card.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      dx = e.clientX - sx; dy = e.clientY - sy;
+      card.style.transform = `translate(${dx}px, ${dy * 0.4}px) rotate(${dx / 18}deg)`;
+      like.style.opacity = Math.max(0, Math.min(1, dx / 90));
+      nope.style.opacity = Math.max(0, Math.min(1, -dx / 90));
+    });
+    const end = () => {
+      if (!dragging) return; dragging = false;
+      const limit = Math.min(110, card.offsetWidth * 0.28);
+      if (Math.abs(dx) > limit) fling(card, dx > 0 ? 1 : -1, dy * 0.4);
+      else { card.style.transition = "transform .25s"; card.style.transform = ""; like.style.opacity = nope.style.opacity = 0; }
+    };
+    card.addEventListener("pointerup", end);
+    card.addEventListener("pointercancel", end);
+  }
+  function fling(card, dir, dy = 0) {
+    if (busy) return; busy = true;
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    card.querySelector(dir > 0 ? ".stamp.like" : ".stamp.nope").style.opacity = 1;
+    card.style.transition = "transform .32s ease-in";
+    card.style.transform = `translate(${dir * (window.innerWidth + 200)}px, ${dy}px) rotate(${dir * 28}deg)`;
+    setTimeout(() => { busy = false; decide(card.dataset.id, dir > 0 ? "like" : "pass"); }, reduce ? 0 : 300);
+  }
+  function decide(id, verdict) {
+    state.decisions[id] = verdict;
+    state.history = state.history.filter((h) => h !== id); state.history.push(id);
+    persist(); renderAll();
+    if (verdict === "like") toast(`${byId(id).name} נשמר/ה ברשימה שלך`);
+  }
+  function swipeTop(dir) {
+    const top = deckEl.querySelector(".card.top");
+    if (top) fling(top, dir);
+  }
+  $("noBtn").addEventListener("click", () => swipeTop(-1));
+  $("yesBtn").addEventListener("click", () => swipeTop(1));
+  $("undoBtn").addEventListener("click", () => {
+    const id = state.history.pop(); if (!id) return;
+    delete state.decisions[id]; persist(); renderAll(); toast(`${byId(id).name} חזר/ה לחפיסה`);
+  });
+  $("toMapBtn").addEventListener("click", () => {
+    const top = deckEl.querySelector(".card.top");
+    if (top) state.selected = top.dataset.id;
+    setTab("map");
+  });
+  document.addEventListener("keydown", (e) => {
+    if (state.tab !== "swipe" || e.target.closest("input,select")) return;
+    if (e.key === "ArrowRight") { e.preventDefault(); swipeTop(1); }
+    if (e.key === "ArrowLeft") { e.preventDefault(); swipeTop(-1); }
+  });
+
+  // ---------- Map ----------
+  const wrap = $("mapWrap"), canvas = $("mapCanvas"), ctx = canvas.getContext("2d"), pinsEl = $("pins");
+  const view = { cx: 0, cy: 0, scale: 55 }; // scale: pixels per km
+  let W = 0, H = 0, setting = false;
+  const PARKS = [[1.3, 1.5, .6, .35], [-2.4, -1.1, .9, .5], [3.1, -2.7, .5, .5], [-0.9, 3.3, .7, .4], [5.4, 1.1, .8, .45], [-5.2, 1.8, .6, .6]];
+  const jit = (i) => (Math.sin(i * 12.9898) * 43758.5453) % 1;
+  const toPx = (x, y) => [W / 2 + (x - view.cx) * view.scale, H / 2 - (y - view.cy) * view.scale];
+  const toKm = (px, py) => [view.cx + (px - W / 2) / view.scale, view.cy - (py - H / 2) / view.scale];
+  const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+  function resizeMap() {
+    const r = wrap.getBoundingClientRect(); W = r.width; H = r.height;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawMap();
+  }
+  function line(x1, y1, x2, y2) { const a = toPx(x1, y1), b = toPx(x2, y2); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); }
+  function drawMap() {
+    if (!W) return;
+    ctx.fillStyle = css("--map-land"); ctx.fillRect(0, 0, W, H);
+    // sea along the west edge
+    ctx.fillStyle = css("--map-water"); ctx.beginPath();
+    const s0 = toPx(-9, 14); ctx.moveTo(s0[0], s0[1]);
+    for (let y = 14; y >= -14; y -= 1) { const p = toPx(-8.4 + Math.sin(y * .7) * .35 + y * .08, y); ctx.lineTo(p[0], p[1]); }
+    const s1 = toPx(-30, -14), s2 = toPx(-30, 14); ctx.lineTo(s1[0], s1[1]); ctx.lineTo(s2[0], s2[1]); ctx.fill();
+    ctx.fillStyle = css("--map-park");
+    for (const [x, y, rx, ry] of PARKS) { const p = toPx(x, y); ctx.beginPath(); ctx.ellipse(p[0], p[1], rx * view.scale, ry * view.scale, .3, 0, Math.PI * 2); ctx.fill(); }
+    const road = css("--map-road"), main = css("--map-main");
+    ctx.lineCap = "round";
+    for (const major of [false, true]) {
+      ctx.strokeStyle = major ? main : road; ctx.lineWidth = major ? Math.max(4, view.scale * .09) : Math.max(1.5, view.scale * .035);
+      ctx.beginPath();
+      for (let i = -24; i <= 24; i++) {
+        if ((i % 4 === 0) !== major) continue;
+        const o = i * .6 + jit(i) * .12, k = .07;
+        line(o - 15 * k, -15, o + 15 * k, 15);
+        line(-15, o + 15 * k, 15, o - 15 * k);
+      }
+      if (major) line(-12, -9, 12, 9);
+      ctx.stroke();
+    }
+    // search radius
+    const m = toPx(state.me.x, state.me.y);
+    ctx.beginPath(); ctx.arc(m[0], m[1], state.maxKm * view.scale, 0, Math.PI * 2);
+    ctx.fillStyle = css("--yes"); ctx.globalAlpha = .09; ctx.fill(); ctx.globalAlpha = .7;
+    ctx.strokeStyle = css("--yes"); ctx.lineWidth = 2; ctx.setLineDash([6, 6]); ctx.stroke();
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
+    placePins();
+  }
+  function placePins() {
+    pinsEl.innerHTML = "";
+    const order = SITTERS.slice().sort((a, b) => b.y - a.y);
+    for (const s of order) {
+      const [px, py] = toPx(s.x, s.y);
+      if (px < -60 || px > W + 60 || py < -20 || py > H + 40) continue;
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "pin" + (s.now ? " now" : "") + (state.decisions[s.id] === "like" ? " liked" : "") + (passes(s) ? "" : " dim") + (state.selected === s.id ? " sel" : "");
+      b.style.left = px + "px"; b.style.top = py + "px";
+      b.innerHTML = (state.decisions[s.id] === "like" ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-8-5.1-8-11a4.6 4.6 0 0 1 8-3.1A4.6 4.6 0 0 1 20 10c0 5.9-8 11-8 11z"/></svg>` : "") + `${s.name} · ₪${s.price}`;
+      b.setAttribute("aria-label", `${s.name}, ₪${s.price} לשעה, ${fmtKm(dist(s))}`);
+      b.addEventListener("pointerdown", (e) => e.stopPropagation());
+      b.addEventListener("click", () => { state.selected = s.id; renderSheet(); placePins(); });
+      pinsEl.appendChild(b);
+    }
+    const me = document.createElement("div"); me.className = "me";
+    const [mx, my] = toPx(state.me.x, state.me.y); me.style.left = mx + "px"; me.style.top = my + "px";
+    pinsEl.appendChild(me);
+  }
+  function renderSheet() {
+    const sh = $("sheet"), s = state.selected && byId(state.selected);
+    $("legend").hidden = !!s;
+    if (!s) { sh.hidden = true; return; }
+    const d = state.decisions[s.id];
+    sh.hidden = false;
+    sh.innerHTML = `
+      <div class="top-row">
+        <div class="mini-av" style="background:linear-gradient(150deg, ${s.c[0]}, ${s.c[1]}); color:#fff">${s.name[0]}</div>
+        <div><h3>${s.name}, ${s.age}</h3>
+          <div class="sub">₪${s.price} לשעה · ${fmtKm(dist(s))} · ★ ${s.rating.toFixed(1)} · ${s.when}</div></div>
+        <button class="x" type="button" id="sheetClose" aria-label="סגירה"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      ${passes(s) ? "" : `<div class="sub">מחוץ לסינון הנוכחי (${s.price > state.maxPrice ? "מחיר" : dist(s) > state.maxKm ? "מרחק" : "זמינות"})</div>`}
+      <div class="row-btns">
+        ${d === "like" ? `<button class="btn" type="button" id="sheetUnlike">הסרה מהשמורים</button>` : `<button class="btn yes" type="button" id="sheetLike">שמירה</button>`}
+        <a class="btn" href="https://www.google.com/maps/search/?api=1&query=${latLng(s)}" target="_blank" rel="noopener">ניווט באזור</a>
+      </div>`;
+    $("sheetClose").addEventListener("click", () => { state.selected = null; renderSheet(); placePins(); });
+    const like = $("sheetLike"), unlike = $("sheetUnlike");
+    if (like) like.addEventListener("click", () => decide(s.id, "like"));
+    if (unlike) unlike.addEventListener("click", () => { delete state.decisions[s.id]; state.history = state.history.filter((h) => h !== s.id); persist(); renderAll(); });
+  }
+  // pan, tap-to-set-location, wheel zoom
+  let pan = null;
+  wrap.addEventListener("pointerdown", (e) => {
+    if (e.target.closest(".tool,.sheet,.pin")) return;
+    pan = { x: e.clientX, y: e.clientY, cx: view.cx, cy: view.cy, moved: false };
+    wrap.setPointerCapture(e.pointerId);
+  });
+  wrap.addEventListener("pointermove", (e) => {
+    if (!pan) return;
+    const dx = e.clientX - pan.x, dy = e.clientY - pan.y;
+    if (Math.hypot(dx, dy) > 6) pan.moved = true;
+    if (pan.moved) { view.cx = pan.cx - dx / view.scale; view.cy = pan.cy + dy / view.scale; drawMap(); }
+  });
+  wrap.addEventListener("pointerup", (e) => {
+    if (!pan) return;
+    const p = pan; pan = null;
+    if (p.moved) return;
+    const r = wrap.getBoundingClientRect();
+    if (setting) {
+      const [x, y] = toKm(e.clientX - r.left, e.clientY - r.top);
+      state.me = { x, y }; setSetting(false);
+      $("locText").textContent = "נקודה שבחרתם על המפה";
+      toast("המיקום עודכן. המרחקים חושבו מחדש"); renderAll();
+    } else if (state.selected) { state.selected = null; renderSheet(); placePins(); }
+  });
+  wrap.addEventListener("pointercancel", () => { pan = null; });
+  wrap.addEventListener("wheel", (e) => { e.preventDefault(); zoom(e.deltaY < 0 ? 1.15 : 1 / 1.15); }, { passive: false });
+  function zoom(f) { view.scale = Math.max(14, Math.min(220, view.scale * f)); drawMap(); }
+  function setSetting(on) {
+    setting = on; wrap.classList.toggle("setting", on); $("mapNote").hidden = !on;
+    $("setLoc").classList.toggle("on", on); $("setLoc").setAttribute("aria-pressed", on);
+  }
+  $("zoomIn").addEventListener("click", () => zoom(1.3));
+  $("zoomOut").addEventListener("click", () => zoom(1 / 1.3));
+  $("recenter").addEventListener("click", () => { view.cx = state.me.x; view.cy = state.me.y; fitRadius(); drawMap(); });
+  $("setLoc").addEventListener("click", () => setSetting(!setting));
+  function fitRadius() { if (W) view.scale = Math.max(14, Math.min(220, Math.min(W, H) / 2 / (state.maxKm * 1.15))); }
+  new ResizeObserver(() => { if (state.tab === "map") resizeMap(); }).observe(wrap);
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", drawMap);
+  new MutationObserver(drawMap).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  // ---------- Location ----------
+  $("gpsBtn").addEventListener("click", () => {
+    if (!navigator.geolocation) { noGps(); return; }
+    $("locText").textContent = "מאתרים את המיקום שלך…";
+    navigator.geolocation.getCurrentPosition((pos) => {
+      state.origin = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      state.me = { x: 0, y: 0 };
+      $("locText").textContent = `המיקום שלך (דיוק ~${Math.round(pos.coords.accuracy)} מ׳)`;
+      toast("המיקום נמצא. בייביסיטרים לדוגמה מוצגים סביבך");
+      view.cx = 0; view.cy = 0; renderAll();
+    }, noGps, { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 });
+  });
+  function noGps() {
+    $("locText").textContent = state.me.x || state.me.y ? "נקודה שבחרתם על המפה" : DEFAULT_ORIGIN.label;
+    toast("אין גישה למיקום כאן. קבעו מיקום ידנית על המפה");
+    setTab("map"); setSetting(true);
+  }
+
+  // ---------- Saved ----------
+  function renderSaved() {
+    const liked = SITTERS.filter((s) => state.decisions[s.id] === "like").sort((a, b) => dist(a) - dist(b));
+    const c = $("savedCount"); c.hidden = !liked.length; c.textContent = liked.length;
+    const el = $("savedList");
+    if (!liked.length) {
+      el.innerHTML = `<div class="list-empty"><h3>עוד לא שמרתם אף אחד</h3><p>גררו כרטיס ימינה או הקישו על הלב, והבייביסיטר יופיע כאן עם מספר הטלפון.</p></div>`;
+      return;
+    }
+    el.innerHTML = liked.map((s) => `
+      <div class="item">
+        <div class="top-row">
+          <div class="mini-av" style="background:linear-gradient(150deg, ${s.c[0]}, ${s.c[1]}); color:#fff">${s.name[0]}</div>
+          <div class="meta"><h3>${s.name}, ${s.age}</h3>
+            <div class="sub">₪${s.price} לשעה · ${fmtKm(dist(s))} · ★ ${s.rating.toFixed(1)} · ${s.when}</div></div>
+        </div>
+        <div class="phone"><code id="ph-${s.id}">${s.phone}</code><button type="button" data-copy="${s.id}">העתקה</button></div>
+        <div class="row-btns">
+          <button class="btn" type="button" data-map="${s.id}">על המפה</button>
+          <button class="btn" type="button" data-remove="${s.id}">הסרה</button>
+        </div>
+      </div>`).join("");
+  }
+  $("savedList").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.copy) {
+      const s = byId(b.dataset.copy);
+      navigator.clipboard.writeText(s.phone).then(() => toast("המספר הועתק"), () => {
+        const r = document.createRange(); r.selectNodeContents($("ph-" + s.id));
+        const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast("המספר מסומן, העתיקו ידנית");
+      });
+    }
+    if (b.dataset.map) { state.selected = b.dataset.map; const s = byId(b.dataset.map); view.cx = s.x; view.cy = s.y; setTab("map"); }
+    if (b.dataset.remove) { delete state.decisions[b.dataset.remove]; state.history = state.history.filter((h) => h !== b.dataset.remove); persist(); renderAll(); }
+  });
+
+  // ---------- Tabs ----------
+  const VIEWS = { swipe: "vSwipe", map: "vMap", saved: "vSaved" };
+  function setTab(t) {
+    state.tab = t;
+    for (const [k, id] of Object.entries(VIEWS)) $(id).hidden = k !== t;
+    document.querySelectorAll("nav.tabs button").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === t));
+    if (t !== "map") setSetting(false);
+    if (t === "map") requestAnimationFrame(() => { const first = !W; resizeMap(); if (first) { fitRadius(); drawMap(); } renderSheet(); });
+  }
+  document.querySelectorAll("nav.tabs button").forEach((b) => b.addEventListener("click", () => setTab(b.dataset.tab)));
+
+  function renderAll() {
+    syncFilters(); renderDeck(); renderSaved();
+    if (state.tab === "map") { drawMap(); renderSheet(); }
+  }
+  renderAll();
+})();
+</script>
+
+</body>
+</html>
