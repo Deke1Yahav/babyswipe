@@ -25,6 +25,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y postgresql
       - name: Run policy tests
         run: |
-          sudo chown -R postgres "$GITHUB_WORKSPACE"
-          sudo -u postgres env TMPDIR=/tmp bash supabase/tests/run_local.sh | tee out.txt
-          grep -q "ALL POLICY TESTS PASSED" out.txt
+          # Postgres refuses to run as the runner user, so run a copy as the postgres user.
+          sudo mkdir /tmp/db-test && sudo cp -r supabase /tmp/db-test/ && sudo chown -R postgres /tmp/db-test
+          sudo -u postgres env TMPDIR=/tmp bash -c 'cd /tmp/db-test && bash supabase/tests/run_local.sh' | tee /tmp/db-test-out.txt
+          grep -q "ALL POLICY TESTS PASSED" /tmp/db-test-out.txt
