@@ -155,9 +155,33 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
 .item .meta { flex: 1; min-width: 0; }
 .item h3 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 19px; }
 .item .sub { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
-.phone { display: flex; align-items: center; gap: 8px; background: var(--bg); border-radius: 10px; padding: 6px 10px; }
-.phone code { flex: 1; font-family: var(--f-body); font-size: 15px; font-weight: 700; user-select: all; direction: ltr; text-align: right; font-variant-numeric: tabular-nums; }
-.phone button { border: 0; background: none; color: var(--yes); font-weight: 700; font-size: 13px; }
+.preview { display: flex; align-items: center; gap: 8px; background: var(--bg); border-radius: 10px; padding: 7px 10px; font-size: 14px; min-width: 0; }
+.preview span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.preview.new span { color: var(--ink); font-weight: 700; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--no); flex: none; }
+
+/* Chat */
+.app.in-chat header .loc, .app.in-chat header .filters { display: none; }
+.chat-head { display: flex; align-items: center; gap: 10px; padding-block: 2px 10px; border-bottom: 1px solid var(--line); }
+.chat-head .meta { flex: 1; min-width: 0; }
+.chat-head h3 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 19px; }
+.chat-head .sub { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.back { border: 0; background: none; padding: 6px; color: var(--ink); display: grid; place-items: center; }
+.msgs { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-block: 12px; }
+.msg { width: fit-content; max-width: 80%; padding: 8px 12px; border-radius: 16px; line-height: 1.4; font-size: 15px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg.from-me { align-self: flex-end; background: var(--yes); color: #fff; border-end-end-radius: 4px; }
+.msg.from-them { align-self: flex-start; background: var(--surface); border: 1px solid var(--line); border-end-start-radius: 4px; }
+.msg time { display: block; font-size: 11px; opacity: .72; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.sys { align-self: center; text-align: center; font-size: 12px; color: var(--muted); max-width: 36ch; padding: 4px 10px; text-wrap: balance; }
+.typing { align-self: flex-start; display: flex; gap: 4px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; }
+.typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: blink 1s infinite; }
+.typing i:nth-child(2) { animation-delay: .2s; } .typing i:nth-child(3) { animation-delay: .4s; }
+@keyframes blink { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+.quick { display: flex; gap: 6px; overflow-x: auto; padding-block: 4px; scrollbar-width: none; }
+.quick button { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 12px; font-size: 13px; font-weight: 600; }
+.composer { display: flex; gap: 8px; padding-block: 6px 10px; }
+.composer input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 999px; padding: 10px 14px; font: inherit; background: var(--surface); color: var(--ink); }
+.composer button { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--yes); color: #fff; display: grid; place-items: center; flex: none; }
 .list-empty { margin: auto; text-align: center; color: var(--muted); max-width: 30ch; display: flex; flex-direction: column; gap: 6px; }
 .list-empty h3 { font-family: var(--f-display); font-weight: 400; color: var(--ink); font-size: 21px; margin: 0; }
 
@@ -261,6 +285,24 @@ nav.tabs .count { background: var(--sun); color: var(--sun-ink); border-radius: 
     <section class="view" id="vSaved" hidden>
       <div class="list" id="savedList"></div>
     </section>
+
+    <section class="view" id="vChat" hidden>
+      <div class="chat-head">
+        <button class="back" id="chatBack" type="button" aria-label="חזרה לשיחות">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+        <div class="mini-av" id="chatAv"></div>
+        <div class="meta"><h3 id="chatName"></h3><div class="sub" id="chatSub"></div></div>
+      </div>
+      <div class="msgs" id="msgs" aria-live="polite"></div>
+      <div class="quick" id="quick"></div>
+      <form class="composer" id="composer">
+        <input id="msgInput" type="text" autocomplete="off" placeholder="כתבו הודעה…" aria-label="הודעה">
+        <button type="submit" aria-label="שליחה">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 4L3 11l6 2.5L11.5 20z" transform="matrix(-1 0 0 1 24 0)"/></svg>
+        </button>
+      </form>
+    </section>
   </main>
 
   <nav class="tabs" role="tablist">
@@ -273,8 +315,8 @@ nav.tabs .count { background: var(--sun); color: var(--sun-ink); border-radius: 
       מפה
     </button>
     <button type="button" role="tab" data-tab="saved" aria-selected="false">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s-8-5.1-8-11a4.6 4.6 0 0 1 8-3.1A4.6 4.6 0 0 1 20 10c0 5.9-8 11-8 11z"/></svg>
-      <span>שמורים<span class="count" id="savedCount" hidden></span></span>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>
+      <span>שיחות<span class="count" id="savedCount" hidden></span></span>
     </button>
   </nav>
 </div>
@@ -300,7 +342,7 @@ nav.tabs .count { background: var(--sun); color: var(--sun-ink); border-radius: 
     { id: "s14", name: "יונתן", age: 28, x: 6.2, y: -0.6, price: 75, rating: 4.8, reviews: 47, years: 7, now: true, when: "עכשיו עד 01:00", tags: ["לילות", "ספורט"], bio: "מורה לחינוך גופני. זמין לערבים מאוחרים ולאירועים.", c: ["#FFC2B4", "#BF4B32"] },
     { id: "s15", name: "גלי", age: 17, x: -0.2, y: -1.3, price: 38, rating: 4.3, reviews: 4, years: 1, now: true, when: "עכשיו עד 21:00", tags: ["שכנה", "יצירה"], bio: "תלמידת תיכון מהשכונה. מתאימה לערבים קצרים ולילדים גדולים.", c: ["#E3F2A6", "#7C9A1E"] },
     { id: "s16", name: "עדי", age: 29, x: -6.5, y: 4.1, price: 68, rating: 4.9, reviews: 58, years: 9, now: false, when: "מחר מ-08:00", tags: ["גננת מוסמכת", "גילאי 0–3"], bio: "גננת לשעבר. זמינה גם בשעות היום ובחופשות.", c: ["#F5D0FF", "#9A3FB5"] },
-  ].map((s, i) => ({ ...s, phone: "050-555-01" + String(10 + i) }));
+  ].map((s) => ({ ...s, g: ["s5", "s8", "s12", "s14"].includes(s.id) ? "m" : "f" }));
 
   const DEFAULT_ORIGIN = { lat: 32.0853, lng: 34.7818, label: "תל אביב · מרכז" };
   const STORE = "babyswipe:v1";
@@ -308,15 +350,18 @@ nav.tabs .count { background: var(--sun); color: var(--sun-ink); border-radius: 
 
   const state = {
     origin: { ...DEFAULT_ORIGIN }, me: { x: 0, y: 0 }, maxKm: 5, maxPrice: 80, nowOnly: false, sort: "dist",
-    decisions: {}, history: [], tab: "swipe", selected: null,
+    decisions: {}, history: [], tab: "swipe", selected: null, chats: {}, unread: {},
   };
+  const KEEP = ["maxKm", "maxPrice", "nowOnly", "sort", "decisions", "chats", "unread"];
   try {
     const saved = JSON.parse(localStorage.getItem(STORE) || "{}");
-    for (const k of ["maxKm", "maxPrice", "nowOnly", "sort", "decisions"]) if (saved[k] !== undefined) state[k] = saved[k];
+    for (const k of KEEP) if (saved[k] !== undefined) state[k] = saved[k];
   } catch (e) {}
   function persist() {
-    try { localStorage.setItem(STORE, JSON.stringify({ maxKm: state.maxKm, maxPrice: state.maxPrice, nowOnly: state.nowOnly, sort: state.sort, decisions: state.decisions })); } catch (e) {}
+    try { localStorage.setItem(STORE, JSON.stringify(Object.fromEntries(KEEP.map((k) => [k, state[k]])))); } catch (e) {}
   }
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const gx = (s, f, m) => (s.g === "m" ? m : f);
 
   const dist = (s) => Math.hypot(s.x - state.me.x, s.y - state.me.y);
   const fmtKm = (d) => d < 1 ? Math.round(d * 1000 / 50) * 50 + " מ׳" : d.toFixed(1) + " ק״מ";
@@ -453,7 +498,7 @@ nav.tabs .count { background: var(--sun); color: var(--sun-ink); border-radius: 
     state.decisions[id] = verdict;
     state.history = state.history.filter((h) => h !== id); state.history.push(id);
     persist(); renderAll();
-    if (verdict === "like") toast(`${byId(id).name} נשמר/ה ברשימה שלך`);
+    if (verdict === "like") toast(`${byId(id).name} ${gx(byId(id), "נשמרה", "נשמר")}. אפשר לשלוח הודעה מ״שיחות״`);
   }
   function swipeTop(dir) {
     const top = deckEl.querySelector(".card.top");
@@ -561,13 +606,15 @@ nav.tabs .count { background: var(--sun); color: var(--sun-ink); border-radius: 
       </div>
       ${passes(s) ? "" : `<div class="sub">מחוץ לסינון הנוכחי (${s.price > state.maxPrice ? "מחיר" : dist(s) > state.maxKm ? "מרחק" : "זמינות"})</div>`}
       <div class="row-btns">
-        ${d === "like" ? `<button class="btn" type="button" id="sheetUnlike">הסרה מהשמורים</button>` : `<button class="btn yes" type="button" id="sheetLike">שמירה</button>`}
+        ${d === "like" ? `<button class="btn" type="button" id="sheetUnlike">הסרה מהשמורים</button>` : `<button class="btn" type="button" id="sheetLike">שמירה</button>`}
+        <button class="btn yes" type="button" id="sheetMsg">הודעה</button>
         <a class="btn" href="https://www.google.com/maps/search/?api=1&query=${latLng(s)}" target="_blank" rel="noopener">ניווט באזור</a>
       </div>`;
     $("sheetClose").addEventListener("click", () => { state.selected = null; renderSheet(); placePins(); });
     const like = $("sheetLike"), unlike = $("sheetUnlike");
     if (like) like.addEventListener("click", () => decide(s.id, "like"));
     if (unlike) unlike.addEventListener("click", () => { delete state.decisions[s.id]; state.history = state.history.filter((h) => h !== s.id); persist(); renderAll(); });
+    $("sheetMsg").addEventListener("click", () => openChat(s.id));
   }
   // pan, tap-to-set-location, wheel zoom
   let pan = null;
@@ -628,48 +675,106 @@ nav.tabs .count { background: var(--sun); color: var(--sun-ink); border-radius: 
     setTab("map"); setSetting(true);
   }
 
-  // ---------- Saved ----------
+  // ---------- Conversations ----------
+  const lastMsg = (id) => { const c = state.chats[id]; return c && c.length ? c[c.length - 1] : null; };
   function renderSaved() {
-    const liked = SITTERS.filter((s) => state.decisions[s.id] === "like").sort((a, b) => dist(a) - dist(b));
-    const c = $("savedCount"); c.hidden = !liked.length; c.textContent = liked.length;
+    const liked = SITTERS.filter((s) => state.decisions[s.id] === "like")
+      .sort((a, b) => ((lastMsg(b) || {}).t || 0) - ((lastMsg(a) || {}).t || 0) || dist(a) - dist(b));
+    const unread = Object.values(state.unread).reduce((a, n) => a + n, 0);
+    const c = $("savedCount"); c.hidden = !unread; c.textContent = unread;
     const el = $("savedList");
     if (!liked.length) {
-      el.innerHTML = `<div class="list-empty"><h3>עוד לא שמרתם אף אחד</h3><p>גררו כרטיס ימינה או הקישו על הלב, והבייביסיטר יופיע כאן עם מספר הטלפון.</p></div>`;
+      el.innerHTML = `<div class="list-empty"><h3>עוד אין לכם שיחות</h3><p>גררו כרטיס ימינה או הקישו על הלב. הבייביסיטר יופיע כאן ותוכלו לשלוח הודעה בתוך האפליקציה.</p></div>`;
       return;
     }
-    el.innerHTML = liked.map((s) => `
+    el.innerHTML = liked.map((s) => {
+      const m = lastMsg(s.id), n = state.unread[s.id] || 0;
+      const text = m ? (m.from === "me" ? "אתם: " : "") + m.text : "עוד לא התכתבתם";
+      return `
       <div class="item">
         <div class="top-row">
           <div class="mini-av" style="background:linear-gradient(150deg, ${s.c[0]}, ${s.c[1]}); color:#fff">${s.name[0]}</div>
           <div class="meta"><h3>${s.name}, ${s.age}</h3>
             <div class="sub">₪${s.price} לשעה · ${fmtKm(dist(s))} · ★ ${s.rating.toFixed(1)} · ${s.when}</div></div>
         </div>
-        <div class="phone"><code id="ph-${s.id}">${s.phone}</code><button type="button" data-copy="${s.id}">העתקה</button></div>
+        <div class="preview${n ? " new" : ""}">${n ? `<i class="dot" aria-label="הודעה חדשה"></i>` : ""}<span>${esc(text)}</span></div>
         <div class="row-btns">
+          <button class="btn yes" type="button" data-chat="${s.id}">${m ? "המשך שיחה" : "שליחת הודעה"}</button>
           <button class="btn" type="button" data-map="${s.id}">על המפה</button>
           <button class="btn" type="button" data-remove="${s.id}">הסרה</button>
         </div>
-      </div>`).join("");
+      </div>`;
+    }).join("");
   }
+
+  let chatId = null;
+  const typing = new Set();
+  const hhmm = (t) => new Date(t).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+  function openChat(id) {
+    if (state.decisions[id] !== "like") {
+      state.decisions[id] = "like"; state.history = state.history.filter((h) => h !== id); state.history.push(id);
+    }
+    chatId = id; delete state.unread[id]; persist();
+    setTab("chat"); renderAll();
+    $("msgInput").focus({ preventScroll: true });
+  }
+  function renderChat() {
+    const s = chatId && byId(chatId); if (!s) return;
+    $("chatAv").style.cssText = `background:linear-gradient(150deg, ${s.c[0]}, ${s.c[1]}); color:#fff`;
+    $("chatAv").textContent = s.name[0];
+    $("chatName").textContent = `${s.name}, ${s.age}`;
+    $("chatSub").textContent = typing.has(s.id) ? gx(s, "מקלידה…", "מקליד…") : `₪${s.price} לשעה · ${fmtKm(dist(s))} · ${s.when}`;
+    const msgs = state.chats[s.id] || [];
+    $("msgs").innerHTML =
+      `<div class="sys">ההתכתבות נשארת בתוך האפליקציה, ומספרי טלפון לא נחשפים. בגרסת הדוגמה הזו התשובות נוצרות אוטומטית.</div>` +
+      msgs.map((m) => `<div class="msg from-${m.from}">${esc(m.text)}<time>${hhmm(m.t)}</time></div>`).join("") +
+      (typing.has(s.id) ? `<div class="typing" aria-label="מקלידים"><i></i><i></i><i></i></div>` : "");
+    const box = $("msgs"); box.scrollTop = box.scrollHeight;
+    const quick = [gx(s, "את פנויה הערב?", "אתה פנוי הערב?"), "מה המחיר לשעה?", "יש לך ניסיון עם תינוקות?", gx(s, "איפה את גרה?", "איפה אתה גר?"), "סגרנו, תודה!"];
+    $("quick").innerHTML = quick.map((q) => `<button type="button">${q}</button>`).join("");
+  }
+  function replyFor(s, t) {
+    if (/מחיר|כמה|עלות|תשלום|₪/.test(t)) return `המחיר שלי ₪${s.price} לשעה. אפשר לסגור גם על כמה ערבים קבועים בשבוע.`;
+    if (/ערב|היום|עכשיו|מחר|זמינ|פנוי|מתי|שעה/.test(t)) return s.now ? `כן, אני ${gx(s, "פנויה", "פנוי")} ${s.when}. לאיזו שעה צריך אותי?` : `כרגע לא, אבל אני ${gx(s, "זמינה", "זמין")} ${s.when}. זה מתאים לכם?`;
+    if (/תינוק|ניסיון|גיל|ילד/.test(t)) return `יש לי ${s.years} שנות ניסיון (${s.tags.join(", ")}). בני כמה הילדים?`;
+    if (/כתובת|איפה|גר|מגיע|רחוק/.test(t)) return `אני ${gx(s, "גרה", "גר")} בערך ${fmtKm(dist(s))} מכם, אז אגיע מהר. את הכתובת המדויקת שלחו לי כאן בצ'אט כשנסגור.`;
+    if (/תודה|סגרנו|מעולה|אחלה|מצוין/.test(t)) return "בשמחה! נתראה, ואם משהו משתנה פשוט כתבו לי כאן.";
+    return "היי, תודה שכתבתם! ספרו לי כמה ילדים יש ומתי צריך אותי.";
+  }
+  function sendMsg(text) {
+    text = text.trim(); const id = chatId; if (!text || !id) return;
+    (state.chats[id] = state.chats[id] || []).push({ from: "me", text, t: Date.now() });
+    persist(); renderChat(); renderSaved();
+    if (typing.has(id)) return;
+    setTimeout(() => { typing.add(id); if (chatId === id) renderChat(); }, 600);
+    setTimeout(() => {
+      typing.delete(id);
+      const s = byId(id), mine = state.chats[id].filter((m) => m.from === "me");
+      state.chats[id].push({ from: "them", text: replyFor(s, mine[mine.length - 1].text), t: Date.now() });
+      if (!(state.tab === "chat" && chatId === id)) { state.unread[id] = (state.unread[id] || 0) + 1; toast(`הודעה חדשה מ${s.name}`); }
+      persist(); renderSaved(); if (chatId === id) renderChat();
+    }, 1900 + Math.random() * 900);
+  }
+  $("composer").addEventListener("submit", (e) => { e.preventDefault(); sendMsg($("msgInput").value); $("msgInput").value = ""; });
+  $("quick").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) sendMsg(b.textContent); });
+  $("chatBack").addEventListener("click", () => { chatId = null; setTab("saved"); });
+
   $("savedList").addEventListener("click", (e) => {
     const b = e.target.closest("button"); if (!b) return;
-    if (b.dataset.copy) {
-      const s = byId(b.dataset.copy);
-      navigator.clipboard.writeText(s.phone).then(() => toast("המספר הועתק"), () => {
-        const r = document.createRange(); r.selectNodeContents($("ph-" + s.id));
-        const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast("המספר מסומן, העתיקו ידנית");
-      });
-    }
+    if (b.dataset.chat) openChat(b.dataset.chat);
     if (b.dataset.map) { state.selected = b.dataset.map; const s = byId(b.dataset.map); view.cx = s.x; view.cy = s.y; setTab("map"); }
     if (b.dataset.remove) { delete state.decisions[b.dataset.remove]; state.history = state.history.filter((h) => h !== b.dataset.remove); persist(); renderAll(); }
   });
 
   // ---------- Tabs ----------
-  const VIEWS = { swipe: "vSwipe", map: "vMap", saved: "vSaved" };
+  const VIEWS = { swipe: "vSwipe", map: "vMap", saved: "vSaved", chat: "vChat" };
   function setTab(t) {
     state.tab = t;
+    if (t !== "chat") chatId = null;
     for (const [k, id] of Object.entries(VIEWS)) $(id).hidden = k !== t;
-    document.querySelectorAll("nav.tabs button").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === t));
+    document.querySelector(".app").classList.toggle("in-chat", t === "chat");
+    const navTab = t === "chat" ? "saved" : t;
+    document.querySelectorAll("nav.tabs button").forEach((b) => b.setAttribute("aria-selected", b.dataset.tab === navTab));
     if (t !== "map") setSetting(false);
     if (t === "map") requestAnimationFrame(() => { const first = !W; resizeMap(); if (first) { fitRadius(); drawMap(); } renderSheet(); });
   }
@@ -678,6 +783,7 @@ nav.tabs .count { background: var(--sun); color: var(--sun-ink); border-radius: 
   function renderAll() {
     syncFilters(); renderDeck(); renderSaved();
     if (state.tab === "map") { drawMap(); renderSheet(); }
+    if (state.tab === "chat") renderChat();
   }
   renderAll();
 })();
