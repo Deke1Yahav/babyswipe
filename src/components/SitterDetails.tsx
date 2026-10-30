@@ -4,6 +4,8 @@ import type { Role } from "../lib/types";
 import { Avatar } from "./Avatar";
 import { RatingSummary, VerifiedBadge } from "./Badges";
 import { ReviewsPanel } from "./Reviews";
+import { AdminPhotoRemove } from "./PersonDetails";
+import { avatarUrl } from "../lib/util";
 
 export interface SitterSummary {
   id: string;
@@ -17,6 +19,8 @@ export interface SitterSummary {
   verified?: boolean;
   rating_avg?: number | null;
   rating_count?: number;
+  avatar_path?: string | null;
+  occupation?: string;
 }
 
 interface Props {
@@ -33,12 +37,12 @@ export function SitterDetails({ sitter: initial, me, role, isAdmin, onClose, onM
   const [s, setS] = useState<SitterSummary>(initial);
   useEffect(() => {
     if (initial.hourly_price !== undefined) return;
-    supabase.from("sitters").select("age, bio, hourly_price, years_experience, tags, available_text, profile:profiles(verified_at)")
+    supabase.from("sitters").select("age, bio, hourly_price, years_experience, tags, available_text, occupation, profile:profiles(verified_at, avatar_path)")
       .eq("id", initial.id).maybeSingle()
       .then(({ data }) => {
         if (!data) return;
-        const d = data as unknown as SitterSummary & { profile: { verified_at: string | null } | null };
-        setS({ ...initial, ...d, verified: !!d.profile?.verified_at });
+        const d = data as unknown as SitterSummary & { profile: { verified_at: string | null; avatar_path: string | null } | null };
+        setS({ ...initial, ...d, verified: !!d.profile?.verified_at, avatar_path: d.profile?.avatar_path ?? null });
       });
   }, [initial]);
   useEffect(() => {
@@ -53,13 +57,16 @@ export function SitterDetails({ sitter: initial, me, role, isAdmin, onClose, onM
         <button className="back" type="button" aria-label="סגירה" onClick={onClose}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
         </button>
-        <Avatar id={s.id} name={s.display_name} size={52} />
+        <Avatar id={s.id} name={s.display_name} path={s.avatar_path} size={52} />
         <div className="meta">
           <h3>{s.display_name}{s.age ? `, ${s.age}` : ""} {s.verified && <VerifiedBadge small />}</h3>
           {s.rating_count !== undefined && <RatingSummary avg={s.rating_avg ?? null} count={s.rating_count} />}
         </div>
       </div>
       <div className="overlay-body">
+        {avatarUrl(s.avatar_path) && <img className="hero-photo" src={avatarUrl(s.avatar_path)!} alt={`התמונה של ${s.display_name}`} />}
+        {isAdmin && s.avatar_path && <AdminPhotoRemove userId={s.id} path={s.avatar_path} onRemoved={() => setS({ ...s, avatar_path: null })} />}
+        {s.occupation && <p className="occupation">{s.occupation}</p>}
         {s.hourly_price !== undefined && (
           <div className="facts">
             <span className="fact price">₪{s.hourly_price} לשעה</span>

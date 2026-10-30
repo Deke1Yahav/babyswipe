@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase";
 import type { Review, Role } from "../lib/types";
 import { errorText, fmtTime, toast } from "../lib/util";
 import { Stars, VerifiedBadge } from "./Badges";
+import { Avatar } from "./Avatar";
 
 interface Props {
   sitterId: string;
@@ -92,6 +93,7 @@ export function ReviewsPanel({ sitterId, sitterName, me, role, isAdmin }: Props)
       {reviews?.map((r) => (
         <article key={r.id} className="review">
           <div className="review-top">
+            <Avatar id={r.parent_id} name={r.parent_name} path={r.parent_avatar} size={26} />
             <b>{r.parent_name}</b>{r.parent_verified && <VerifiedBadge small />}
             <Stars value={r.rating} size={13} />
             <time>{fmtTime(r.created_at)}</time>

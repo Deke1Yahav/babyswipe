@@ -1,13 +1,14 @@
 import type { NearbySitter } from "../lib/types";
-import { colorsFor, fmtKm } from "../lib/util";
+import { avatarUrl, colorsFor, fmtKm } from "../lib/util";
 import { RatingSummary, VerifiedBadge } from "./Badges";
 
 export function SitterCardBody({ s }: { s: NearbySitter }) {
   const [a, b] = colorsFor(s.id);
+  const photo = avatarUrl(s.avatar_path);
   return (
     <>
       <div className="art" style={{ background: `linear-gradient(150deg, ${a}, ${b})` }}>
-        <div className="ini" aria-hidden="true">{s.display_name.trim()[0]}</div>
+        {photo ? <img className="photo" src={photo} alt="" draggable={false} /> : <div className="ini" aria-hidden="true">{s.display_name.trim()[0]}</div>}
         <div className={"badge" + (s.available_now ? "" : " later")}><i />{s.available_now ? "פנוי/ה עכשיו" : s.available_text || "זמינות בתיאום"}</div>
         <div className="stamp like">שמירה</div>
         <div className="stamp nope">דילוג</div>
@@ -18,6 +19,7 @@ export function SitterCardBody({ s }: { s: NearbySitter }) {
           {s.age && <span className="age">{s.age}</span>}
           {s.verified && <VerifiedBadge />}
         </div>
+        {s.occupation && <div className="occupation">{s.occupation}</div>}
         <RatingSummary avg={s.rating_avg} count={s.rating_count} />
         <div className="facts">
           <span className="fact price">₪{s.hourly_price} לשעה</span>

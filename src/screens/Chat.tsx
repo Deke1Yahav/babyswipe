@@ -11,12 +11,13 @@ interface Props {
   onBack: () => void;
   onChanged: () => void;
   onOpenReviews?: () => void;
+  onOpenProfile?: () => void;
 }
 
 const QUICK_PARENT = ["פנוי/ה הערב?", "מה המחיר לשעה?", "יש ניסיון עם תינוקות?", "באיזה אזור את/ה?"];
 const QUICK_SITTER = ["כן, אני פנוי/ה", "בני כמה הילדים?", "לאיזו שעה צריך?", "שלחו לי את הכתובת כשנסגור"];
 
-export function ChatScreen({ conv, me, onBack, onChanged, onOpenReviews }: Props) {
+export function ChatScreen({ conv, me, onBack, onChanged, onOpenReviews, onOpenProfile }: Props) {
   const [msgs, setMsgs] = useState<Message[]>([]);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -80,9 +81,12 @@ export function ChatScreen({ conv, me, onBack, onChanged, onOpenReviews }: Props
         <button className="back" type="button" aria-label="חזרה לשיחות" onClick={onBack}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
         </button>
-        <Avatar id={conv.other_id} name={conv.other_name} />
+        <button className="avatar-btn" type="button" aria-label={`הפרופיל של ${conv.other_name}`} onClick={onOpenReviews ?? onOpenProfile}>
+          <Avatar id={conv.other_id} name={conv.other_name} path={conv.other_avatar} />
+        </button>
         <div className="meta"><h3>{conv.other_name} {conv.other_verified && <VerifiedBadge small />}</h3><div className="sub">{conv.other_role === "sitter" ? "בייביסיטר" : "הורה"}</div></div>
-        {onOpenReviews && <button className="btn ghost" type="button" onClick={onOpenReviews}>ביקורות</button>}
+        {onOpenReviews && <button className="btn ghost" type="button" onClick={onOpenReviews}>פרופיל וביקורות</button>}
+        {onOpenProfile && <button className="btn ghost" type="button" onClick={onOpenProfile}>פרופיל</button>}
         <button className="btn ghost" type="button" aria-expanded={safety} onClick={() => setSafety(!safety)}>בטיחות</button>
       </div>
       {safety && (

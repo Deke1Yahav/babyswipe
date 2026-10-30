@@ -5,7 +5,7 @@ import { Avatar } from "../components/Avatar";
 import { fmtTime } from "../lib/util";
 import { VerifiedBadge } from "../components/Badges";
 
-interface SavedSitter { sitter_id: string; name: string; price: number }
+interface SavedSitter { sitter_id: string; name: string; price: number; avatar: string | null }
 
 interface Props {
   role: Role;
@@ -23,14 +23,14 @@ export function ChatsScreen({ role, convs, onOpen, onMessageSitter, onUnsave, sa
     if (role !== "parent") return;
     supabase
       .from("swipes")
-      .select("sitter_id, sitter:sitters(hourly_price, profile:profiles(display_name))")
+      .select("sitter_id, sitter:sitters(hourly_price, profile:profiles(display_name, avatar_path))")
       .eq("verdict", "like")
       .order("created_at", { ascending: false })
       .then(({ data }) => {
-        type Row = { sitter_id: string; sitter: { hourly_price: number; profile: { display_name: string } | null } | null };
+        type Row = { sitter_id: string; sitter: { hourly_price: number; profile: { display_name: string; avatar_path: string | null } | null } | null };
         setSaved(((data ?? []) as unknown as Row[])
           .filter((r) => r.sitter?.profile)
-          .map((r) => ({ sitter_id: r.sitter_id, name: r.sitter!.profile!.display_name, price: r.sitter!.hourly_price })));
+          .map((r) => ({ sitter_id: r.sitter_id, name: r.sitter!.profile!.display_name, price: r.sitter!.hourly_price, avatar: r.sitter!.profile!.avatar_path })));
       });
   }, [role, savedVersion]);
 
@@ -52,7 +52,7 @@ export function ChatsScreen({ role, convs, onOpen, onMessageSitter, onUnsave, sa
     <div className="list">
       {convs.map((c) => (
         <button key={c.id} type="button" className="conv" onClick={() => onOpen(c)}>
-          <Avatar id={c.other_id} name={c.other_name} />
+          <Avatar id={c.other_id} name={c.other_name} path={c.other_avatar} />
           <div className="meta">
             <div className="conv-top"><h3>{c.other_name} {c.other_verified && <VerifiedBadge small />}</h3>{c.last_at && <time>{fmtTime(c.last_at)}</time>}</div>
             <div className={"preview" + (c.unread ? " new" : "")}>
@@ -66,7 +66,7 @@ export function ChatsScreen({ role, convs, onOpen, onMessageSitter, onUnsave, sa
       {waiting.map((s) => (
         <div key={s.sitter_id} className="item">
           <div className="top-row">
-            <Avatar id={s.sitter_id} name={s.name} />
+            <Avatar id={s.sitter_id} name={s.name} path={s.avatar} />
             <div className="meta"><h3>{s.name}</h3><div className="sub">₪{s.price} לשעה</div></div>
           </div>
           <div className="row-btns">

@@ -6,6 +6,7 @@ import { errorText, toast } from "../lib/util";
 import { VerificationSection } from "../components/Verification";
 import { ReviewsPanel } from "../components/Reviews";
 import { VerifiedBadge } from "../components/Badges";
+import { PhotoPicker } from "../components/PhotoPicker";
 
 interface Props {
   profile: Profile;
@@ -17,6 +18,8 @@ interface Props {
 
 export function ProfileScreen({ profile, email, listing, verified, onChanged }: Props) {
   const [name, setName] = useState(profile.display_name);
+  const [about, setAbout] = useState(profile.about ?? "");
+  const [kids, setKids] = useState(profile.kids_text ?? "");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
   const availableNow = !!listing?.available_until && new Date(listing.available_until) > new Date();
@@ -36,8 +39,8 @@ export function ProfileScreen({ profile, email, listing, verified, onChanged }: 
   }
   async function saveName(e: React.FormEvent) {
     e.preventDefault();
-    const { error } = await supabase.from("profiles").update({ display_name: name.trim() }).eq("id", profile.id);
-    if (error) toast(errorText(error)); else { toast("השם נשמר"); onChanged(); }
+    const { error } = await supabase.from("profiles").update({ display_name: name.trim(), about: about.trim(), kids_text: kids.trim() }).eq("id", profile.id);
+    if (error) toast(errorText(error)); else { toast("הפרופיל נשמר"); onChanged(); }
   }
   async function deleteAccount() {
     setBusy(true);
@@ -76,14 +79,21 @@ export function ProfileScreen({ profile, email, listing, verified, onChanged }: 
       {listing ? (
         <section className="item">
           <h3>הפרופיל שלי</h3>
-          <SitterForm userId={profile.id} name={profile.display_name} initial={listing} onSaved={onChanged} />
+          <SitterForm userId={profile.id} name={profile.display_name} initial={listing} avatarPath={profile.avatar_path} onSaved={onChanged} />
         </section>
       ) : (
         <form className="item form" onSubmit={saveName}>
           <h3>הפרופיל שלי</h3>
+          <p className="small">בייביסיטרים רואים את הפרטים האלה כשאתם שולחים להם הודעה.</p>
+          <PhotoPicker userId={profile.id} name={profile.display_name} path={profile.avatar_path} onChange={onChanged}
+            hint="תמונה שלכם, לא של הילדים." />
           <label className="field"><span>השם שיוצג לבייביסיטרים</span>
             <input id="pf-name" required maxLength={40} value={name} onChange={(e) => setName(e.target.value)} /></label>
-          <button className="btn" type="submit" disabled={name.trim() === profile.display_name}>שמירה</button>
+          <label className="field"><span>הילדים</span>
+            <input id="pf-kids" maxLength={100} value={kids} onChange={(e) => setKids(e.target.value)} placeholder="למשל: 2 ילדים, בני 3 ו-6" /></label>
+          <label className="field"><span>כמה מילים עליכם</span>
+            <textarea id="pf-about" rows={3} maxLength={300} value={about} onChange={(e) => setAbout(e.target.value)} placeholder="איפה אתם גרים, מה חשוב לכם, הרגלים של הילדים" /></label>
+          <button className="btn yes" type="submit" disabled={name.trim() === profile.display_name && about.trim() === (profile.about ?? "") && kids.trim() === (profile.kids_text ?? "")}>שמירה</button>
         </form>
       )}
       <section className="item">

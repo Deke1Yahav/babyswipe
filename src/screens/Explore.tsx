@@ -42,7 +42,7 @@ export function ExploreScreen({ loc, filters, all, selectedId, onSelect, onSetLo
       {sel && (
         <div className="sheet">
           <div className="top-row">
-            <Avatar id={sel.id} name={sel.display_name} />
+            <Avatar id={sel.id} name={sel.display_name} path={sel.avatar_path} />
             <div className="meta">
               <h3>{sel.display_name}{sel.age ? `, ${sel.age}` : ""} {sel.verified && <VerifiedBadge small />}</h3>
               <div className="sub">₪{sel.hourly_price} לשעה · {fmtKm(sel.distance_km)} · {sel.available_now ? "פנוי/ה עכשיו" : sel.available_text || "זמינות בתיאום"}</div>

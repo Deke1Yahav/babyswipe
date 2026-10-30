@@ -2,16 +2,20 @@ import { useState } from "react";
 import { supabase } from "../lib/supabase";
 import type { Point, SitterListing } from "../lib/types";
 import { MapView } from "../components/MapView";
+import { PhotoPicker } from "../components/PhotoPicker";
 import { TAGS, errorText, getPosition, toast } from "../lib/util";
 
 interface Props {
   userId: string;
   name: string;
   initial: SitterListing | null;
+  avatarPath: string | null;
   onSaved: () => void;
 }
 
-export function SitterForm({ userId, name: initialName, initial, onSaved }: Props) {
+export function SitterForm({ userId, name: initialName, initial, avatarPath, onSaved }: Props) {
+  const [photo, setPhoto] = useState(avatarPath);
+  const [occupation, setOccupation] = useState(initial?.occupation ?? "");
   const [name, setName] = useState(initialName);
   const [age, setAge] = useState(initial?.age?.toString() ?? "");
   const [price, setPrice] = useState(initial?.hourly_price?.toString() ?? "50");
@@ -43,7 +47,7 @@ export function SitterForm({ userId, name: initialName, initial, onSaved }: Prop
       }
       const row = {
         age: age ? Number(age) : null, hourly_price: Number(price), years_experience: Number(years),
-        tags, bio: bio.trim(), available_text: when.trim(), lat: loc.lat, lng: loc.lng,
+        tags, bio: bio.trim(), available_text: when.trim(), lat: loc.lat, lng: loc.lng, occupation: occupation.trim(),
       };
       const { error } = initial
         ? await supabase.from("sitters").update(row).eq("id", userId)
@@ -63,6 +67,8 @@ export function SitterForm({ userId, name: initialName, initial, onSaved }: Prop
   return (
     <form className="form sitter-form" onSubmit={submit}>
       {!initial && <h2>הפרופיל שלכם כבייביסיטר</h2>}
+      <PhotoPicker userId={userId} name={name} path={photo} onChange={setPhoto}
+        hint="תמונה ברורה של הפנים שלכם. הורים בוחרים הרבה יותר בפרופילים עם תמונה." />
       <div className="grid2">
         <label className="field"><span>שם</span>
           <input id="sf-name" required maxLength={40} value={name} onChange={(e) => setName(e.target.value)} /></label>
@@ -73,6 +79,8 @@ export function SitterForm({ userId, name: initialName, initial, onSaved }: Prop
         <label className="field"><span>שנות ניסיון</span>
           <input id="sf-years" type="number" inputMode="numeric" min={0} max={60} value={years} onChange={(e) => setYears(e.target.value)} /></label>
       </div>
+      <label className="field"><span>עיסוק או לימודים</span>
+        <input id="sf-occupation" maxLength={60} value={occupation} onChange={(e) => setOccupation(e.target.value)} placeholder="למשל: סטודנטית לחינוך, גננת, תלמיד י״ב" /></label>
       <label className="field"><span>מתי אתם בדרך כלל זמינים</span>
         <input id="sf-when" maxLength={60} value={when} onChange={(e) => setWhen(e.target.value)} placeholder="למשל: ערבים בימים א׳–ה׳" /></label>
       <fieldset className="field">

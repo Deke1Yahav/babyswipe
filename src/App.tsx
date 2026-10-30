@@ -14,6 +14,7 @@ import { ProfileScreen } from "./screens/Profile";
 import { FiltersBar } from "./components/FiltersBar";
 import { SitterDetails, type SitterSummary } from "./components/SitterDetails";
 import { AdminScreen } from "./screens/Admin";
+import { ParentDetails } from "./components/PersonDetails";
 
 export default function App() {
   return configured ? <Root /> : <SetupNeeded />;
@@ -50,7 +51,7 @@ function Root() {
   const uid = session?.user.id;
   const load = useCallback(async () => {
     if (!uid) { setProfile(undefined); return; }
-    const { data: p, error } = await supabase.from("profiles").select("id, role, display_name, verified_at").eq("id", uid).maybeSingle();
+    const { data: p, error } = await supabase.from("profiles").select("id, role, display_name, verified_at, avatar_path, about, kids_text").eq("id", uid).maybeSingle();
     if (error) { toast(errorText(error)); return; }
     if (p?.role === "sitter") {
       const { data: l } = await supabase.from("sitters").select("*").eq("id", uid).maybeSingle();
@@ -71,7 +72,7 @@ function Root() {
     return <Onboarding userId={session.user.id} suggestedName={suggested} onDone={load} />;
   }
   if (profile.role === "sitter" && !listing) {
-    return <div className="screen scroll"><SitterForm userId={profile.id} name={profile.display_name} initial={null} onSaved={load} /></div>;
+    return <div className="screen scroll"><SitterForm userId={profile.id} name={profile.display_name} initial={null} avatarPath={profile.avatar_path} onSaved={load} /></div>;
   }
   return <Main profile={profile} email={session.user.email ?? ""} listing={listing} reload={load} />;
 }
@@ -97,6 +98,7 @@ function Main({ profile, email, listing, reload }: { profile: Profile; email: st
   const [open, setOpen] = useState<ConversationSummary | null>(null);
   const [savedVersion, setSavedVersion] = useState(0);
   const [details, setDetails] = useState<SitterSummary | null>(null);
+  const [parentDetails, setParentDetails] = useState<{ id: string; name: string } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   useEffect(() => { supabase.rpc("is_admin").then(({ data }) => setIsAdmin(Boolean(data))); }, []);
   const openRef = useRef<string | null>(null);
@@ -228,11 +230,13 @@ function Main({ profile, email, listing, reload }: { profile: Profile; email: st
         )}
         {tab === "chats" && (open
           ? <ChatScreen key={open.id} conv={open} me={profile.id} onBack={() => setOpen(null)} onChanged={refreshConvs}
-              onOpenReviews={open.other_role === "sitter" ? () => setDetails({ id: open.other_id, display_name: open.other_name }) : undefined} />
+              onOpenReviews={open.other_role === "sitter" ? () => setDetails({ id: open.other_id, display_name: open.other_name, avatar_path: open.other_avatar }) : undefined}
+              onOpenProfile={open.other_role === "parent" ? () => setParentDetails({ id: open.other_id, name: open.other_name }) : undefined} />
           : <ChatsScreen role={profile.role} convs={convs} onOpen={setOpen} onMessageSitter={messageSitter} onUnsave={unsave} savedVersion={savedVersion} />)}
         {tab === "profile" && <ProfileScreen profile={profile} email={email} listing={listing} verified={!!profile.verified_at} onChanged={reload} />}
         {tab === "admin" && isAdmin && <AdminScreen />}
       </main>
+      {parentDetails && <ParentDetails id={parentDetails.id} name={parentDetails.name} isAdmin={isAdmin} onClose={() => setParentDetails(null)} />}
       {details && (
         <SitterDetails sitter={details} me={profile.id} role={profile.role} isAdmin={isAdmin} onClose={() => setDetails(null)}
           onMessage={isParent && !(tab === "chats" && open) ? () => { const id = details.id; setDetails(null); messageSitter(id); } : undefined} />

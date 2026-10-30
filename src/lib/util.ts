@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { supabase } from "./supabase";
 
 export const TAGS = [
   "עזרה ראשונה", "תינוקות", "גילאי 0–3", "גילאי 3–6", "גילאי 6–12", "שיעורי בית",
@@ -57,6 +58,8 @@ export function errorText(e: unknown): string {
   if (/rate limit|too many/i.test(msg)) return "יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.";
   if (/row-level security|permission denied/i.test(msg)) return "אין הרשאה לפעולה הזו.";
   if (/Failed to fetch|NetworkError/i.test(msg)) return "אין חיבור לשרת. בדקו את האינטרנט ונסו שוב.";
+  if (/could not be decoded|InvalidStateError|image/i.test(msg) && !/mime|size/i.test(msg)) return "לא הצלחנו לקרוא את התמונה. נסו תמונה אחרת, בפורמט JPG או PNG.";
+  if (/exceeded the maximum allowed size|Payload too large/i.test(msg)) return "התמונה גדולה מדי. נסו תמונה אחרת.";
   return msg;
 }
 
@@ -78,4 +81,8 @@ export async function shrinkImage(file: File, max = 1600): Promise<Blob> {
   bmp.close();
   return new Promise((resolve, reject) =>
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("image"))), "image/jpeg", 0.85));
+}
+
+export function avatarUrl(path: string | null | undefined): string | null {
+  return path ? supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl : null;
 }
