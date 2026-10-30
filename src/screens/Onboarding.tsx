@@ -3,9 +3,9 @@ import { supabase } from "../lib/supabase";
 import type { Role } from "../lib/types";
 import { errorText } from "../lib/util";
 
-export function Onboarding({ userId, onDone }: { userId: string; onDone: () => void }) {
+export function Onboarding({ userId, suggestedName = "", onDone }: { userId: string; suggestedName?: string; onDone: () => void }) {
   const [role, setRole] = useState<Role | null>(null);
-  const [name, setName] = useState("");
+  const [name, setName] = useState(suggestedName.slice(0, 40));
   const [agree, setAgree] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);

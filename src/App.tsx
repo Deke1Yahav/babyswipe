@@ -62,7 +62,12 @@ function Root() {
   if (recovery) return <NewPasswordScreen onDone={() => { setRecovery(false); toast("הסיסמה עודכנה"); }} />;
   if (!session) return <AuthScreen />;
   if (profile === undefined) return <Splash />;
-  if (profile === null) return <Onboarding userId={session.user.id} onDone={load} />;
+  if (profile === null) {
+    // Google sign-ins carry the person's name; email sign-ups start empty.
+    const meta = session.user.user_metadata ?? {};
+    const suggested = String(meta.full_name ?? meta.name ?? "").trim().split(/\s+/)[0] ?? "";
+    return <Onboarding userId={session.user.id} suggestedName={suggested} onDone={load} />;
+  }
   if (profile.role === "sitter" && !listing) {
     return <div className="screen scroll"><SitterForm userId={profile.id} name={profile.display_name} initial={null} onSaved={load} /></div>;
   }

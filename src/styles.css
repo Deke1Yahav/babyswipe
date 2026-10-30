@@ -59,6 +59,11 @@ textarea { resize: vertical; }
 .secondary { background: var(--surface); border: 1px solid var(--line); color: var(--ink); font-size: 14px; padding: 9px 14px; }
 .link { border: 0; background: none; color: var(--muted); text-decoration: underline; font-size: 14px; padding: 4px; align-self: center; }
 
+.google { display: flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 11px 18px; font-weight: 700; font-size: 16px; }
+.google:disabled { opacity: .5; }
+.or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
+.or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
 .roles { display: flex; flex-direction: column; gap: 10px; }
 .role { text-align: start; border: 2px solid var(--line); background: var(--surface); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 4px; }
 .role b { font-family: var(--f-display); font-weight: 400; font-size: 19px; }
