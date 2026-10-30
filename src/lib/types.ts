@@ -3,7 +3,7 @@ export type Verdict = "like" | "pass";
 
 export interface Point { lat: number; lng: number }
 
-export interface Profile { id: string; role: Role; display_name: string }
+export interface Profile { id: string; role: Role; display_name: string; verified_at: string | null }
 
 export interface SitterListing {
   id: string;
@@ -33,6 +33,9 @@ export interface NearbySitter {
   lng: number;
   distance_km: number;
   my_verdict: Verdict | null;
+  verified: boolean;
+  rating_avg: number | null;
+  rating_count: number;
 }
 
 export interface ConversationSummary {
@@ -45,6 +48,7 @@ export interface ConversationSummary {
   last_from_me: boolean | null;
   unread: number;
   blocked: boolean;
+  other_verified: boolean;
 }
 
 export interface Message {
@@ -55,4 +59,16 @@ export interface Message {
   created_at: string;
 }
 
-export interface Filters { maxKm: number; maxPrice: number; nowOnly: boolean; sort: "dist" | "price" }
+export interface Filters { maxKm: number; maxPrice: number; nowOnly: boolean; verifiedOnly?: boolean; sort: "dist" | "price" | "rating" }
+
+export interface Review {
+  id: number;
+  parent_id: string;
+  parent_name: string;
+  parent_verified: boolean;
+  rating: number;
+  body: string;
+  sitter_reply: string | null;
+  created_at: string;
+  mine: boolean;
+}

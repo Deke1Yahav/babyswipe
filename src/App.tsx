@@ -12,6 +12,8 @@ import { ChatsScreen } from "./screens/Chats";
 import { ChatScreen } from "./screens/Chat";
 import { ProfileScreen } from "./screens/Profile";
 import { FiltersBar } from "./components/FiltersBar";
+import { SitterDetails, type SitterSummary } from "./components/SitterDetails";
+import { AdminScreen } from "./screens/Admin";
 
 export default function App() {
   return configured ? <Root /> : <SetupNeeded />;
@@ -48,7 +50,7 @@ function Root() {
   const uid = session?.user.id;
   const load = useCallback(async () => {
     if (!uid) { setProfile(undefined); return; }
-    const { data: p, error } = await supabase.from("profiles").select("id, role, display_name").eq("id", uid).maybeSingle();
+    const { data: p, error } = await supabase.from("profiles").select("id, role, display_name, verified_at").eq("id", uid).maybeSingle();
     if (error) { toast(errorText(error)); return; }
     if (p?.role === "sitter") {
       const { data: l } = await supabase.from("sitters").select("*").eq("id", uid).maybeSingle();
@@ -78,7 +80,7 @@ function Splash() {
   return <div className="screen center"><h1 className="logo">בייבי<span>סוויפ</span></h1></div>;
 }
 
-type Tab = "swipe" | "map" | "chats" | "profile";
+type Tab = "swipe" | "map" | "chats" | "profile" | "admin";
 interface Loc extends Point { label: string }
 const DEFAULT_FILTERS: Filters = { maxKm: 5, maxPrice: 80, nowOnly: false, sort: "dist" };
 
@@ -94,6 +96,9 @@ function Main({ profile, email, listing, reload }: { profile: Profile; email: st
   const [convs, setConvs] = useState<ConversationSummary[]>([]);
   const [open, setOpen] = useState<ConversationSummary | null>(null);
   const [savedVersion, setSavedVersion] = useState(0);
+  const [details, setDetails] = useState<SitterSummary | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => { supabase.rpc("is_admin").then(({ data }) => setIsAdmin(Boolean(data))); }, []);
   const openRef = useRef<string | null>(null);
   openRef.current = open?.id ?? null;
 
@@ -111,9 +116,13 @@ function Main({ profile, email, listing, reload }: { profile: Profile; email: st
   useEffect(() => { const t = window.setTimeout(search, 300); return () => window.clearTimeout(t); }, [search]);
 
   const deck = useMemo(() => all
-    .filter((s) => !s.my_verdict && (!filters.nowOnly || s.available_now))
-    .sort((a, b) => (filters.sort === "price" ? a.hourly_price - b.hourly_price || a.distance_km - b.distance_km : a.distance_km - b.distance_km)),
-  [all, filters.nowOnly, filters.sort]);
+    .filter((s) => !s.my_verdict && (!filters.nowOnly || s.available_now) && (!filters.verifiedOnly || s.verified))
+    .sort((a, b) =>
+      filters.sort === "price" ? a.hourly_price - b.hourly_price || a.distance_km - b.distance_km
+      : filters.sort === "rating" ? (Number(b.rating_avg ?? 0) - Number(a.rating_avg ?? 0)) || b.rating_count - a.rating_count || a.distance_km - b.distance_km
+      : a.distance_km - b.distance_km),
+  [all, filters.nowOnly, filters.verifiedOnly, filters.sort]);
+  const openDetails = (id: string) => { const s = all.find((x) => x.id === id); if (s) setDetails(s); };
 
   const setVerdictLocal = (id: string, v: Verdict | null) => setAll((list) => list.map((s) => (s.id === id ? { ...s, my_verdict: v } : s)));
 
@@ -201,7 +210,7 @@ function Main({ profile, email, listing, reload }: { profile: Profile; email: st
             )}
           </div>
           {isParent && (tab === "swipe" || tab === "map") && (
-            <FiltersBar filters={filters} onChange={setFilters} count={all.filter((s) => !filters.nowOnly || s.available_now).length} />
+            <FiltersBar filters={filters} onChange={setFilters} count={all.filter((s) => (!filters.nowOnly || s.available_now) && (!filters.verifiedOnly || s.verified)).length} />
           )}
         </header>
       )}
@@ -209,25 +218,32 @@ function Main({ profile, email, listing, reload }: { profile: Profile; email: st
         {tab === "swipe" && isParent && (
           <SwipeScreen deck={deck} loading={loading} hasLocation={!!loc} canUndo={history.length > 0}
             onDecide={decide} onUndo={undo} onLocate={locate} onResetPasses={resetPasses}
-            hasPasses={all.some((s) => s.my_verdict === "pass")}
+            hasPasses={all.some((s) => s.my_verdict === "pass")} onOpenDetails={openDetails}
             onOpenMap={(id) => { setSelected(id ?? null); setTab("map"); }} />
         )}
         {tab === "map" && isParent && (
           <ExploreScreen loc={loc} filters={filters} all={all} selectedId={selected} onSelect={setSelected}
             onSetLocation={(p) => { setLoc({ ...p, label: "נקודה שבחרתם על המפה" }); toast("המיקום עודכן"); }}
-            onLike={(id) => decide(id, "like")} onMessage={messageSitter} />
+            onLike={(id) => decide(id, "like")} onMessage={messageSitter} onOpenDetails={openDetails} />
         )}
         {tab === "chats" && (open
-          ? <ChatScreen key={open.id} conv={open} me={profile.id} onBack={() => setOpen(null)} onChanged={refreshConvs} />
+          ? <ChatScreen key={open.id} conv={open} me={profile.id} onBack={() => setOpen(null)} onChanged={refreshConvs}
+              onOpenReviews={open.other_role === "sitter" ? () => setDetails({ id: open.other_id, display_name: open.other_name }) : undefined} />
           : <ChatsScreen role={profile.role} convs={convs} onOpen={setOpen} onMessageSitter={messageSitter} onUnsave={unsave} savedVersion={savedVersion} />)}
-        {tab === "profile" && <ProfileScreen profile={profile} email={email} listing={listing} onChanged={reload} />}
+        {tab === "profile" && <ProfileScreen profile={profile} email={email} listing={listing} verified={!!profile.verified_at} onChanged={reload} />}
+        {tab === "admin" && isAdmin && <AdminScreen />}
       </main>
+      {details && (
+        <SitterDetails sitter={details} me={profile.id} role={profile.role} isAdmin={isAdmin} onClose={() => setDetails(null)}
+          onMessage={isParent && !(tab === "chats" && open) ? () => { const id = details.id; setDetails(null); messageSitter(id); } : undefined} />
+      )}
       {!inChat && (
         <nav className="tabs" role="tablist">
           {isParent && <TabButton tab="swipe" cur={tab} set={setTab} label="החלקה" icon={<><rect x="5" y="3" width="14" height="18" rx="3" /></>} />}
           {isParent && <TabButton tab="map" cur={tab} set={setTab} label="מפה" icon={<><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z" /><path d="M9 4v14M15 6v14" /></>} />}
           <TabButton tab="chats" cur={tab} set={(t) => { setOpen(null); setTab(t); }} label="שיחות" badge={unread} icon={<path d="M4 5h16v11H9l-5 4z" />} />
           <TabButton tab="profile" cur={tab} set={setTab} label="פרופיל" icon={<><circle cx="12" cy="8" r="4" /><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" /></>} />
+          {isAdmin && <TabButton tab="admin" cur={tab} set={setTab} label="ניהול" icon={<path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z" />} />}
         </nav>
       )}
     </div>

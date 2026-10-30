@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase";
 import type { ConversationSummary, Role } from "../lib/types";
 import { Avatar } from "../components/Avatar";
 import { fmtTime } from "../lib/util";
+import { VerifiedBadge } from "../components/Badges";
 
 interface SavedSitter { sitter_id: string; name: string; price: number }
 
@@ -53,7 +54,7 @@ export function ChatsScreen({ role, convs, onOpen, onMessageSitter, onUnsave, sa
         <button key={c.id} type="button" className="conv" onClick={() => onOpen(c)}>
           <Avatar id={c.other_id} name={c.other_name} />
           <div className="meta">
-            <div className="conv-top"><h3>{c.other_name}</h3>{c.last_at && <time>{fmtTime(c.last_at)}</time>}</div>
+            <div className="conv-top"><h3>{c.other_name} {c.other_verified && <VerifiedBadge small />}</h3>{c.last_at && <time>{fmtTime(c.last_at)}</time>}</div>
             <div className={"preview" + (c.unread ? " new" : "")}>
               <span>{c.blocked ? "השיחה חסומה" : c.last_body ? (c.last_from_me ? "אתם: " : "") + c.last_body : "עוד לא נשלחו הודעות"}</span>
               {c.unread > 0 && <b className="count">{c.unread}</b>}

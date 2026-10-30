@@ -3,15 +3,19 @@ import { supabase } from "../lib/supabase";
 import type { Profile, SitterListing } from "../lib/types";
 import { SitterForm } from "./SitterForm";
 import { errorText, toast } from "../lib/util";
+import { VerificationSection } from "../components/Verification";
+import { ReviewsPanel } from "../components/Reviews";
+import { VerifiedBadge } from "../components/Badges";
 
 interface Props {
   profile: Profile;
   email: string;
   listing: SitterListing | null;
+  verified: boolean;
   onChanged: () => void;
 }
 
-export function ProfileScreen({ profile, email, listing, onChanged }: Props) {
+export function ProfileScreen({ profile, email, listing, verified, onChanged }: Props) {
   const [name, setName] = useState(profile.display_name);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -60,6 +64,13 @@ export function ProfileScreen({ profile, email, listing, onChanged }: Props) {
             <input id="pf-active" type="checkbox" checked={listing.is_active} onChange={(e) => setActive(e.target.checked)} />
             <span>הפרופיל מוצג להורים בחיפוש</span>
           </label>
+        </section>
+      )}
+      <VerificationSection userId={profile.id} verified={verified} onChanged={onChanged} />
+      {listing && (
+        <section className="item">
+          <h3>הביקורות עליי {verified && <VerifiedBadge small />}</h3>
+          <ReviewsPanel sitterId={profile.id} sitterName={profile.display_name} me={profile.id} role="sitter" />
         </section>
       )}
       {listing ? (

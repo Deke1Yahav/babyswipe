@@ -29,3 +29,4 @@ jobs:
           sudo mkdir /tmp/db-test && sudo cp -r supabase /tmp/db-test/ && sudo chown -R postgres /tmp/db-test
           sudo -u postgres env TMPDIR=/tmp bash -c 'cd /tmp/db-test && bash supabase/tests/run_local.sh' | tee /tmp/db-test-out.txt
           grep -q "ALL POLICY TESTS PASSED" /tmp/db-test-out.txt
+          grep -q "ALL VERIFICATION AND REVIEW TESTS PASSED" /tmp/db-test-out.txt

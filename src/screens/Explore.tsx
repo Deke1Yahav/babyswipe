@@ -3,6 +3,7 @@ import type { Filters, NearbySitter, Point } from "../lib/types";
 import { MapView } from "../components/MapView";
 import { Avatar } from "../components/Avatar";
 import { fmtKm } from "../lib/util";
+import { RatingSummary, VerifiedBadge } from "../components/Badges";
 
 interface Props {
   loc: Point | null;
@@ -13,12 +14,13 @@ interface Props {
   onSetLocation: (p: Point) => void;
   onLike: (id: string) => void;
   onMessage: (id: string) => void;
+  onOpenDetails: (id: string) => void;
 }
 
-export function ExploreScreen({ loc, filters, all, selectedId, onSelect, onSetLocation, onLike, onMessage }: Props) {
+export function ExploreScreen({ loc, filters, all, selectedId, onSelect, onSetLocation, onLike, onMessage, onOpenDetails }: Props) {
   const [picking, setPicking] = useState(!loc);
   const liked = useMemo(() => new Set(all.filter((s) => s.my_verdict === "like").map((s) => s.id)), [all]);
-  const dimmed = useMemo(() => (s: NearbySitter) => filters.nowOnly && !s.available_now, [filters.nowOnly]);
+  const dimmed = useMemo(() => (s: NearbySitter) => (filters.nowOnly && !s.available_now) || (!!filters.verifiedOnly && !s.verified), [filters.nowOnly, filters.verifiedOnly]);
   const sel = all.find((s) => s.id === selectedId) ?? null;
 
   return (
@@ -42,16 +44,18 @@ export function ExploreScreen({ loc, filters, all, selectedId, onSelect, onSetLo
           <div className="top-row">
             <Avatar id={sel.id} name={sel.display_name} />
             <div className="meta">
-              <h3>{sel.display_name}{sel.age ? `, ${sel.age}` : ""}</h3>
+              <h3>{sel.display_name}{sel.age ? `, ${sel.age}` : ""} {sel.verified && <VerifiedBadge small />}</h3>
               <div className="sub">₪{sel.hourly_price} לשעה · {fmtKm(sel.distance_km)} · {sel.available_now ? "פנוי/ה עכשיו" : sel.available_text || "זמינות בתיאום"}</div>
             </div>
             <button className="x" type="button" aria-label="סגירה" onClick={() => onSelect(null)}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
             </button>
           </div>
+          <RatingSummary avg={sel.rating_avg} count={sel.rating_count} />
           {sel.bio && <p className="bio">{sel.bio}</p>}
           <div className="row-btns">
             {sel.my_verdict !== "like" && <button className="btn" type="button" onClick={() => onLike(sel.id)}>שמירה</button>}
+            <button className="btn" type="button" onClick={() => onOpenDetails(sel.id)}>פרטים וביקורות</button>
             <button className="btn yes" type="button" onClick={() => onMessage(sel.id)}>הודעה</button>
           </div>
         </div>

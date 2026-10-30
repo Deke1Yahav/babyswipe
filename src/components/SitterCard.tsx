@@ -1,5 +1,6 @@
 import type { NearbySitter } from "../lib/types";
 import { colorsFor, fmtKm } from "../lib/util";
+import { RatingSummary, VerifiedBadge } from "./Badges";
 
 export function SitterCardBody({ s }: { s: NearbySitter }) {
   const [a, b] = colorsFor(s.id);
@@ -15,7 +16,9 @@ export function SitterCardBody({ s }: { s: NearbySitter }) {
         <div className="name-row">
           <h2>{s.display_name}</h2>
           {s.age && <span className="age">{s.age}</span>}
+          {s.verified && <VerifiedBadge />}
         </div>
+        <RatingSummary avg={s.rating_avg} count={s.rating_count} />
         <div className="facts">
           <span className="fact price">₪{s.hourly_price} לשעה</span>
           <span className="fact">{fmtKm(s.distance_km)} ממך</span>

@@ -8,7 +8,7 @@ export function FiltersBar({ filters, onChange, count }: { filters: Filters; onC
     <div className={"filters" + (open ? " open" : "")}>
       <button className="filters-sum" type="button" aria-expanded={open} onClick={() => setOpen(!open)}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4" /></svg>
-        <span className="sum"><b>{count}</b> בטווח · עד {filters.maxKm} ק״מ · עד ₪{filters.maxPrice}{filters.nowOnly ? " · פנויים עכשיו" : ""}</span>
+        <span className="sum"><b>{count}</b> בטווח · עד {filters.maxKm} ק״מ · עד ₪{filters.maxPrice}{filters.nowOnly ? " · פנויים עכשיו" : ""}{filters.verifiedOnly ? " · מאומתים" : ""}</span>
         <svg className="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
       </button>
       {open && (
@@ -23,9 +23,11 @@ export function FiltersBar({ filters, onChange, count }: { filters: Filters; onC
           </label>
           <div className="f-inline">
             <label className="check"><input id="f-now" type="checkbox" checked={filters.nowOnly} onChange={(e) => set({ nowOnly: e.target.checked })} /> <span>פנויים עכשיו בלבד</span></label>
+            <label className="check"><input id="f-verified" type="checkbox" checked={!!filters.verifiedOnly} onChange={(e) => set({ verifiedOnly: e.target.checked })} /> <span>מאומתים בלבד</span></label>
             <select id="f-sort" aria-label="מיון" value={filters.sort} onChange={(e) => set({ sort: e.target.value as Filters["sort"] })}>
               <option value="dist">הקרובים קודם</option>
               <option value="price">הזולים קודם</option>
+              <option value="rating">הדירוג הגבוה קודם</option>
             </select>
           </div>
         </div>

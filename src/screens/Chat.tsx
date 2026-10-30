@@ -3,18 +3,20 @@ import { supabase } from "../lib/supabase";
 import type { ConversationSummary, Message } from "../lib/types";
 import { Avatar } from "../components/Avatar";
 import { errorText, fmtTime, toast } from "../lib/util";
+import { VerifiedBadge } from "../components/Badges";
 
 interface Props {
   conv: ConversationSummary;
   me: string;
   onBack: () => void;
   onChanged: () => void;
+  onOpenReviews?: () => void;
 }
 
 const QUICK_PARENT = ["פנוי/ה הערב?", "מה המחיר לשעה?", "יש ניסיון עם תינוקות?", "באיזה אזור את/ה?"];
 const QUICK_SITTER = ["כן, אני פנוי/ה", "בני כמה הילדים?", "לאיזו שעה צריך?", "שלחו לי את הכתובת כשנסגור"];
 
-export function ChatScreen({ conv, me, onBack, onChanged }: Props) {
+export function ChatScreen({ conv, me, onBack, onChanged, onOpenReviews }: Props) {
   const [msgs, setMsgs] = useState<Message[]>([]);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -79,7 +81,8 @@ export function ChatScreen({ conv, me, onBack, onChanged }: Props) {
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
         </button>
         <Avatar id={conv.other_id} name={conv.other_name} />
-        <div className="meta"><h3>{conv.other_name}</h3><div className="sub">{conv.other_role === "sitter" ? "בייביסיטר" : "הורה"}</div></div>
+        <div className="meta"><h3>{conv.other_name} {conv.other_verified && <VerifiedBadge small />}</h3><div className="sub">{conv.other_role === "sitter" ? "בייביסיטר" : "הורה"}</div></div>
+        {onOpenReviews && <button className="btn ghost" type="button" onClick={onOpenReviews}>ביקורות</button>}
         <button className="btn ghost" type="button" aria-expanded={safety} onClick={() => setSafety(!safety)}>בטיחות</button>
       </div>
       {safety && (

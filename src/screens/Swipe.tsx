@@ -12,6 +12,7 @@ interface Props {
   onLocate: () => void;
   onOpenMap: (id?: string) => void;
   onResetPasses: () => void;
+  onOpenDetails: (id: string) => void;
   hasPasses: boolean;
 }
 
@@ -86,7 +87,12 @@ export function SwipeScreen(p: Props) {
               if (!start.current) return;
               start.current = null;
               const limit = Math.min(110, (cardRef.current?.offsetWidth ?? 300) * 0.28);
-              if (Math.abs(drag.dx) > limit) fling(drag.dx > 0 ? 1 : -1); else setDrag({ dx: 0, dy: 0 });
+              if (Math.abs(drag.dx) > limit) fling(drag.dx > 0 ? 1 : -1);
+              else {
+                // A tap (no real drag) opens the full profile with reviews.
+                if (Math.abs(drag.dx) < 6 && Math.abs(drag.dy) < 6) p.onOpenDetails(s.id);
+                setDrag({ dx: 0, dy: 0 });
+              }
             } : undefined}
             onPointerCancel={i === 0 ? () => { start.current = null; setDrag({ dx: 0, dy: 0 }); } : undefined}
           >
@@ -108,7 +114,7 @@ export function SwipeScreen(p: Props) {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z" /><path d="M9 4v14M15 6v14" /></svg>
         </button>
       </div>
-      <div className="hint">גררו ימינה לשמירה, שמאלה לדילוג</div>
+      <div className="hint">גררו ימינה לשמירה, שמאלה לדילוג · הקישו על הכרטיס לביקורות</div>
     </div>
   );
 }
